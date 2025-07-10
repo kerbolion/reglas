@@ -1,5 +1,5 @@
 // ==========================================
-// GESTIÓN DE ACCIONES
+// GESTIÓN DE ACCIONES CON REORDENAMIENTO
 // ==========================================
 
 function addAction() {
@@ -54,6 +54,9 @@ function removeAction(index) {
   }
 }
 
+// ==========================================
+// NUEVA FUNCIÓN DE REORDENAMIENTO DE ACCIONES
+// ==========================================
 function moveAction(index, direction) {
   const actions = state.currentEditingActions;
   const newIndex = index + direction;
@@ -132,28 +135,6 @@ function getActionTitle(type) {
   return titles[type] || 'Acción Desconocida';
 }
 
-function getActionSummary(action) {
-  switch (action.type) {
-    case 'text':
-      const text = action.config.message || '';
-      return text.length > 30 ? `: "${text.substring(0, 30)}..."` : `: "${text}"`;
-    case 'image':
-      return action.config.caption ? `: ${action.config.caption}` : '';
-    case 'video':
-      return action.config.caption ? `: ${action.config.caption}` : '';
-    case 'document':
-      return action.config.filename ? `: ${action.config.filename}` : '';
-    case 'delay':
-      return `: ${action.config.seconds || 1}s`;
-    case 'function':
-      return action.config.functionName ? `: ${action.config.functionName}()` : '';
-    case 'condition':
-      return action.config.condition ? `: ${action.config.condition}` : '';
-    default:
-      return '';
-  }
-}
-
 function renderActionConfig(action, index) {
   switch (action.type) {
     case 'text':
@@ -161,7 +142,7 @@ function renderActionConfig(action, index) {
         <div class="form-group">
           <label>Mensaje de texto:</label>
           <textarea placeholder="Escribe el mensaje que se enviará..." 
-                    oninput="updateActionConfig(${index}, 'message', this.value)">${action.config.message || ''}</textarea>
+                    oninput="updateActionConfig(${index}, 'message', this.value)">${escapeHtml(action.config.message || '')}</textarea>
         </div>
       `;
     
@@ -170,13 +151,13 @@ function renderActionConfig(action, index) {
         <div class="form-group">
           <label>URL de la imagen:</label>
           <input type="url" placeholder="https://ejemplo.com/imagen.jpg" 
-                 value="${action.config.url || ''}"
+                 value="${escapeHtml(action.config.url || '')}"
                  oninput="updateActionConfig(${index}, 'url', this.value)">
         </div>
         <div class="form-group">
           <label>Texto descriptivo (opcional):</label>
           <input type="text" placeholder="Descripción de la imagen..." 
-                 value="${action.config.caption || ''}"
+                 value="${escapeHtml(action.config.caption || '')}"
                  oninput="updateActionConfig(${index}, 'caption', this.value)">
         </div>
       `;
@@ -186,13 +167,13 @@ function renderActionConfig(action, index) {
         <div class="form-group">
           <label>URL del video:</label>
           <input type="url" placeholder="https://ejemplo.com/video.mp4" 
-                 value="${action.config.url || ''}"
+                 value="${escapeHtml(action.config.url || '')}"
                  oninput="updateActionConfig(${index}, 'url', this.value)">
         </div>
         <div class="form-group">
           <label>Texto descriptivo (opcional):</label>
           <input type="text" placeholder="Descripción del video..." 
-                 value="${action.config.caption || ''}"
+                 value="${escapeHtml(action.config.caption || '')}"
                  oninput="updateActionConfig(${index}, 'caption', this.value)">
         </div>
       `;
@@ -202,7 +183,7 @@ function renderActionConfig(action, index) {
         <div class="form-group">
           <label>URL del audio:</label>
           <input type="url" placeholder="https://ejemplo.com/audio.mp3" 
-                 value="${action.config.url || ''}"
+                 value="${escapeHtml(action.config.url || '')}"
                  oninput="updateActionConfig(${index}, 'url', this.value)">
         </div>
       `;
@@ -212,13 +193,13 @@ function renderActionConfig(action, index) {
         <div class="form-group">
           <label>URL del documento:</label>
           <input type="url" placeholder="https://ejemplo.com/documento.pdf" 
-                 value="${action.config.url || ''}"
+                 value="${escapeHtml(action.config.url || '')}"
                  oninput="updateActionConfig(${index}, 'url', this.value)">
         </div>
         <div class="form-group">
           <label>Nombre del archivo:</label>
           <input type="text" placeholder="documento.pdf" 
-                 value="${action.config.filename || ''}"
+                 value="${escapeHtml(action.config.filename || '')}"
                  oninput="updateActionConfig(${index}, 'filename', this.value)">
         </div>
       `;
@@ -230,7 +211,7 @@ function renderActionConfig(action, index) {
           <input type="number" min="1" max="300" 
                  value="${action.config.seconds || 1}"
                  oninput="updateActionConfig(${index}, 'seconds', parseInt(this.value))">
-          <small style="color: var(--text-secondary); font-size: 12px;">
+          <small style="color: var(--text-secondary); font-size: 12px; display: block; margin-top: 4px;">
             El bot esperará este tiempo antes de continuar con la siguiente acción
           </small>
         </div>
@@ -241,13 +222,13 @@ function renderActionConfig(action, index) {
         <div class="form-group">
           <label>Nombre de la función:</label>
           <input type="text" placeholder="nombre_funcion" 
-                 value="${action.config.functionName || ''}"
+                 value="${escapeHtml(action.config.functionName || '')}"
                  oninput="updateActionConfig(${index}, 'functionName', this.value)">
         </div>
         <div class="form-group">
           <label>Parámetros (JSON):</label>
           <textarea placeholder='{"parametro1": "valor1", "parametro2": "valor2"}' 
-                    oninput="updateActionConfig(${index}, 'parameters', this.value)">${JSON.stringify(action.config.parameters || {}, null, 2)}</textarea>
+                    oninput="updateActionConfig(${index}, 'parameters', this.value)">${escapeHtml(JSON.stringify(action.config.parameters || {}, null, 2))}</textarea>
         </div>
       `;
     
@@ -256,7 +237,7 @@ function renderActionConfig(action, index) {
         <div class="form-group">
           <label>Condición a evaluar:</label>
           <input type="text" placeholder="Ej: hora_actual < 18:00" 
-                 value="${action.config.condition || ''}"
+                 value="${escapeHtml(action.config.condition || '')}"
                  oninput="updateActionConfig(${index}, 'condition', this.value)">
         </div>
         <div style="color: var(--text-secondary); font-size: 12px; margin-top: 8px;">

@@ -1,10 +1,14 @@
-// Funciones auxiliares y utilidades
+// ==========================================
+// FUNCIONES AUXILIARES Y UTILIDADES
+// ==========================================
 
 function renderAll() {
   renderInstances();
   if (state.currentInstance) {
     showInstanceContent();
     loadInstanceData();
+    renderRulesGroupSelector();
+    renderRulesGroupControls();
     renderRules();
   } else {
     hideInstanceContent();
@@ -19,10 +23,15 @@ function escapeHtml(text) {
 }
 
 function saveData() {
-  localStorage.setItem('autoresponder-data', JSON.stringify({
+  const dataToSave = {
     instances: state.instances,
-    currentInstance: state.currentInstance
-  }));
+    currentInstance: state.currentInstance,
+    currentRulesGroup: state.currentRulesGroup,
+    sessionConfig: state.sessionConfig,
+    lastSaved: new Date().toISOString()
+  };
+  
+  localStorage.setItem('autoresponder-data', JSON.stringify(dataToSave));
 }
 
 function loadData() {
@@ -32,6 +41,16 @@ function loadData() {
       const data = JSON.parse(saved);
       state.instances = data.instances || [];
       state.currentInstance = data.currentInstance || null;
+      state.currentRulesGroup = data.currentRulesGroup || null;
+      
+      // Cargar configuración de sesión si existe
+      if (data.sessionConfig) {
+        state.sessionConfig = { ...state.sessionConfig, ...data.sessionConfig };
+      }
+      
+      // Migrar instancias existentes al nuevo formato si es necesario
+      migrateAllInstancesToNewFormat();
+      
     } catch (e) {
       console.error('Error loading data:', e);
     }
@@ -42,7 +61,130 @@ function loadData() {
   document.documentElement.setAttribute('data-theme', savedTheme);
 }
 
-// Funciones de validación
+// ==========================================
+// MIGRACIÓN DE DATOS
+// ==========================================
+function migrateAllInstancesToNewFormat() {
+  let needsSave = false;
+  
+  state.instances.forEach(instance => {
+    // Migrar reglas al formato de grupos si es necesario
+    if (instance.rules && Array.isArray(instance.rules) && instance.rules.length > 0 && !instance.rulesGroups) {
+      console.log(`Migrando instancia "${instance.name}" al nuevo formato de grupos...`);
+      
+      const defaultGroupKey = generateId();
+      instance.rulesGroups = {
+        [defaultGroupKey]: {
+          name: 'General',
+          rules: [...instance.rules]
+        }
+      };
+      
+      // Limpiar el array anterior pero mantenerlo para compatibilidad
+      instance.rules = [];
+      needsSave = true;
+    }
+    
+    // Asegurar que la estructura de grupos existe
+    if (!instance.rulesGroups) {
+      const defaultGroupKey = generateId();
+      instance.rulesGroups = {
+        [defaultGroupKey]: {
+          name: 'General',
+          rules: []
+        }
+      };
+      needsSave = true;
+    }
+    
+    // Asegurar que arrays necesarios existen
+    if (!instance.variables) instance.variables = [];
+    if (!instance.tags) instance.tags = [];
+    if (!instance.forms) instance.forms = [];
+  });
+  
+  if (needsSave) {
+    saveData();
+  }
+}
+
+// ==========================================
+// ESTADÍSTICAS Y CONTADORES
+// ==========================================
+function getAllRulesFromInstance(instance) {
+  if (!instance) return [];
+  
+  let allRules = [];
+  if (instance.rulesGroups) {
+    Object.values(instance.rulesGroups).forEach(group => {
+      if (group.rules && Array.isArray(group.rules)) {
+        allRules = allRules.concat(group.rules);
+      }
+    });
+  }
+  
+  return allRules;
+}
+
+function getActiveRulesCount(instance) {
+  if (!instance) return 0;
+  
+  const allRules = getAllRulesFromInstance(instance);
+  return allRules.filter(rule => rule.active).length;
+}
+
+function getTotalActionsCount(instance) {
+  if (!instance) return 0;
+  
+  const allRules = getAllRulesFromInstance(instance);
+  return allRules.reduce((total, rule) => {
+    return total + (rule.actions ? rule.actions.length : 0);
+  }, 0);
+}
+
+function getInstanceStats(instance) {
+  if (!instance) {
+    return {
+      totalGroups: 0,
+      totalRules: 0,
+      activeRules: 0,
+      inactiveRules: 0,
+      totalActions: 0
+    };
+  }
+  
+  const allRules = getAllRulesFromInstance(instance);
+  const activeRules = allRules.filter(rule => rule.active);
+  const inactiveRules = allRules.filter(rule => !rule.active);
+  
+  return {
+    totalGroups: Object.keys(instance.rulesGroups || {}).length,
+    totalRules: allRules.length,
+    activeRules: activeRules.length,
+    inactiveRules: inactiveRules.length,
+    totalActions: getTotalActionsCount(instance)
+  };
+}
+
+function updateCachedStats() {
+  const instance = getCurrentInstance();
+  state.cachedStats = getInstanceStats(instance);
+  state.lastStatsUpdate = Date.now();
+}
+
+function getCachedStats() {
+  // Si no hay cache o es muy antiguo (más de 30 segundos), actualizar
+  if (!state.cachedStats || !state.lastStatsUpdate || 
+      (Date.now() - state.lastStatsUpdate) > 30000) {
+    updateCachedStats();
+  }
+  
+  return state.cachedStats;
+}
+
+// ==========================================
+// VALIDACIÓN
+// ==========================================
 function validateRule(rule) {
   const errors = [];
   
@@ -52,6 +194,10 @@ function validateRule(rule) {
   
   if (!rule.keywords || rule.keywords.length === 0) {
     errors.push('Debe especificar al menos una palabra clave');
+  }
+  
+  if (rule.keywords && rule.keywords.some(keyword => keyword.trim() === '')) {
+    errors.push('Las palabras clave no pueden estar vacías');
   }
   
   return {
@@ -95,7 +241,30 @@ function validateAction(action) {
   };
 }
 
-// Funciones de utilidad para fechas
+function validateRulesGroup(groupName, instanceId) {
+  const errors = [];
+  const instance = state.instances.find(i => i.id === instanceId);
+  
+  if (!groupName || groupName.trim() === '') {
+    errors.push('El nombre del grupo es requerido');
+  }
+  
+  if (instance && instance.rulesGroups) {
+    const existingNames = Object.values(instance.rulesGroups).map(g => g.name.toLowerCase());
+    if (existingNames.includes(groupName.toLowerCase())) {
+      errors.push('Ya existe un grupo con ese nombre');
+    }
+  }
+  
+  return {
+    isValid: errors.length === 0,
+    errors
+  };
+}
+
+// ==========================================
+// UTILIDADES DE FECHAS Y HORARIOS
+// ==========================================
 function formatDate(dateString) {
   const date = new Date(dateString);
   return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
@@ -114,25 +283,48 @@ function isWithinBusinessHours(time = new Date()) {
   return currentTime >= startTime && currentTime <= endTime;
 }
 
-// Funciones de búsqueda y filtrado
-function searchRules(query) {
+// ==========================================
+// BÚSQUEDA Y FILTRADO
+// ==========================================
+function searchRules(query, groupKey = null) {
   const instance = getCurrentInstance();
-  if (!instance || !query || query.trim() === '') return instance ? instance.rules : [];
+  if (!instance || !query || query.trim() === '') {
+    return groupKey ? (instance.rulesGroups[groupKey]?.rules || []) : getAllRulesFromInstance(instance);
+  }
   
   const searchTerm = query.toLowerCase();
-  return instance.rules.filter(rule => 
+  const rulesToSearch = groupKey ? 
+    (instance.rulesGroups[groupKey]?.rules || []) : 
+    getAllRulesFromInstance(instance);
+  
+  return rulesToSearch.filter(rule => 
     rule.name.toLowerCase().includes(searchTerm) ||
     rule.keywords.some(keyword => keyword.toLowerCase().includes(searchTerm))
   );
 }
 
-// Funciones de exportación/importación
+function filterRulesByStatus(rules, status) {
+  switch (status) {
+    case 'active':
+      return rules.filter(rule => rule.active);
+    case 'inactive':
+      return rules.filter(rule => !rule.active);
+    default:
+      return rules;
+  }
+}
+
+// ==========================================
+// EXPORTACIÓN/IMPORTACIÓN
+// ==========================================
 function exportData() {
   const data = {
     instances: state.instances,
     currentInstance: state.currentInstance,
+    currentRulesGroup: state.currentRulesGroup,
     exportDate: new Date().toISOString(),
-    version: '1.0'
+    version: '2.0', // Incrementar versión por el nuevo formato
+    format: 'groups-enabled'
   };
   
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -164,6 +356,12 @@ function importData() {
         if (confirm('¿Sobrescribir la configuración actual con los datos importados?')) {
           state.instances = data.instances || [];
           state.currentInstance = data.currentInstance || null;
+          state.currentRulesGroup = data.currentRulesGroup || null;
+          
+          // Migrar datos si vienen de una versión anterior
+          if (!data.format || data.format !== 'groups-enabled') {
+            migrateAllInstancesToNewFormat();
+          }
           
           saveData();
           renderAll();
@@ -179,13 +377,21 @@ function importData() {
   input.click();
 }
 
-// Funciones de notificación (para futuras mejoras)
+// ==========================================
+// FUNCIONES DE NOTIFICACIÓN
+// ==========================================
 function showNotification(message, type = 'info') {
   // Por ahora usar alert, pero se puede mejorar con una notificación personalizada
   console.log(`[${type.toUpperCase()}] ${message}`);
+  
+  if (state.sessionConfig.debugMode) {
+    alert(`[${type.toUpperCase()}] ${message}`);
+  }
 }
 
-// Funciones de debounce para optimización
+// ==========================================
+// FUNCIONES DE DEBOUNCE Y OPTIMIZACIÓN
+// ==========================================
 function debounce(func, wait) {
   let timeout;
   return function executedFunction(...args) {
@@ -198,7 +404,68 @@ function debounce(func, wait) {
   };
 }
 
-// Función para generar IDs únicos
+// Crear versión debounced de saveData para optimización
+const debouncedSaveData = debounce(saveData, state.sessionConfig.saveInterval);
+
+// ==========================================
+// FUNCIÓN PARA GENERAR IDS ÚNICOS
+// ==========================================
 function generateId() {
   return Date.now().toString(36) + Math.random().toString(36).substr(2);
+}
+
+// ==========================================
+// FUNCIONES DE LIMPIEZA Y MANTENIMIENTO
+// ==========================================
+function cleanupEmptyGroups() {
+  const instance = getCurrentInstance();
+  if (!instance || !instance.rulesGroups) return;
+  
+  let hasChanges = false;
+  const groupKeys = Object.keys(instance.rulesGroups);
+  
+  // No eliminar el último grupo
+  if (groupKeys.length <= 1) return;
+  
+  groupKeys.forEach(groupKey => {
+    const group = instance.rulesGroups[groupKey];
+    if (!group.rules || group.rules.length === 0) {
+      // Solo eliminar si no es el grupo actual
+      if (groupKey !== state.currentRulesGroup) {
+        delete instance.rulesGroups[groupKey];
+        hasChanges = true;
+      }
+    }
+  });
+  
+  if (hasChanges) {
+    saveData();
+    renderRulesGroupSelector();
+  }
+}
+
+function optimizeInstanceData() {
+  const instance = getCurrentInstance();
+  if (!instance) return;
+  
+  // Limpiar grupos vacíos
+  cleanupEmptyGroups();
+  
+  // Limpiar acciones inválidas
+  if (instance.rulesGroups) {
+    Object.values(instance.rulesGroups).forEach(group => {
+      if (group.rules) {
+        group.rules.forEach(rule => {
+          if (rule.actions) {
+            rule.actions = rule.actions.filter(action => 
+              action.type && action.config !== undefined
+            );
+          }
+        });
+      }
+    });
+  }
+  
+  // Actualizar estadísticas
+  updateCachedStats();
 }

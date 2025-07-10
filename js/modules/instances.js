@@ -1,10 +1,13 @@
 // ==========================================
-// GESTIÓN DE INSTANCIAS
+// GESTIÓN DE INSTANCIAS CON GRUPOS DE REGLAS
 // ==========================================
 
 function addInstance() {
   const name = prompt('Nombre de la nueva instancia:', `Instancia ${state.instances.length + 1}`);
   if (!name || name.trim() === '') return;
+  
+  // Crear grupo por defecto para la nueva instancia
+  const defaultGroupKey = generateId();
   
   const instance = {
     id: generateId(),
@@ -24,12 +27,15 @@ function addInstance() {
       onlyBusinessHours: false,
       autoResponderActive: false
     },
-    rules: [],
+    // Nueva estructura de grupos de reglas
     rulesGroups: {
-      'all': { name: 'Todas las reglas', rules: [] },
-      'active': { name: 'Solo activas', rules: [] },
-      'inactive': { name: 'Solo inactivas', rules: [] }
+      [defaultGroupKey]: {
+        name: 'General',
+        rules: []
+      }
     },
+    // Mantener array de reglas para compatibilidad (migrar después)
+    rules: [],
     variables: [],
     tags: [],
     forms: [],
@@ -59,6 +65,7 @@ function deleteInstance(instanceId) {
     // Si era la instancia actual, limpiar selección
     if (state.currentInstance === instanceId) {
       state.currentInstance = null;
+      state.currentRulesGroup = null;
       hideInstanceContent();
     }
     
@@ -69,10 +76,63 @@ function deleteInstance(instanceId) {
 
 function selectInstance(instanceId) {
   state.currentInstance = instanceId;
+  
+  // Migrar datos si es necesario
+  migrateInstanceDataStructure();
+  
+  // Seleccionar el primer grupo de reglas por defecto
+  const instance = getCurrentInstance();
+  if (instance && instance.rulesGroups) {
+    const firstGroupKey = Object.keys(instance.rulesGroups)[0];
+    state.currentRulesGroup = firstGroupKey || null;
+  }
+  
   renderInstances();
   showInstanceContent();
   loadInstanceData();
   showTab(state.currentTab); // Refrescar contenido de la pestaña actual
+}
+
+// ==========================================
+// MIGRACIÓN DE DATOS
+// ==========================================
+function migrateInstanceDataStructure() {
+  const instance = getCurrentInstance();
+  if (!instance) return;
+  
+  // Si la instancia tiene reglas en el formato anterior, migrarlas
+  if (instance.rules && Array.isArray(instance.rules) && instance.rules.length > 0 && !instance.rulesGroups) {
+    console.log('Migrando reglas al nuevo formato de grupos...');
+    
+    const defaultGroupKey = generateId();
+    instance.rulesGroups = {
+      [defaultGroupKey]: {
+        name: 'General',
+        rules: [...instance.rules]
+      }
+    };
+    
+    // Limpiar el array anterior
+    instance.rules = [];
+    saveData();
+  }
+  
+  // Si no tiene estructura de grupos, crearla
+  if (!instance.rulesGroups) {
+    const defaultGroupKey = generateId();
+    instance.rulesGroups = {
+      [defaultGroupKey]: {
+        name: 'General',
+        rules: []
+      }
+    };
+    saveData();
+  }
+  
+  // Asegurar que arrays requeridos existan
+  if (!instance.variables) instance.variables = [];
+  if (!instance.tags) instance.tags = [];
+  if (!instance.forms) instance.forms = [];
 }
 
 function showInstanceContent() {
@@ -230,6 +290,9 @@ function loadInstanceData() {
   const instance = getCurrentInstance();
   if (!instance) return;
   
+  // Migrar datos si es necesario antes de cargar
+  migrateInstanceDataStructure();
+  
   // Cargar información de la instancia
   document.getElementById('instance-id').textContent = instance.instanceId;
   document.getElementById('instance-subscription').textContent = instance.subscription;
@@ -248,6 +311,10 @@ function loadInstanceData() {
   document.getElementById('rules-title').textContent = `Reglas - ${instance.name}`;
   document.getElementById('config-title').textContent = `Configuración - ${instance.name}`;
   
+  // Cargar selectores de grupos de reglas
+  renderRulesGroupSelector();
+  renderRulesGroupControls();
+  
   // Actualizar UI de botones
   updateInstanceUI();
   
@@ -260,8 +327,17 @@ function updateInstanceStats() {
   const instance = getCurrentInstance();
   if (!instance) return;
   
-  const activeRules = instance.rules.filter(rule => rule.active).length;
-  document.getElementById('instance-total-rules').textContent = activeRules;
+  // Contar todas las reglas activas en todos los grupos
+  let activeRulesCount = 0;
+  if (instance.rulesGroups) {
+    Object.values(instance.rulesGroups).forEach(group => {
+      if (group.rules) {
+        activeRulesCount += group.rules.filter(rule => rule.active).length;
+      }
+    });
+  }
+  
+  document.getElementById('instance-total-rules').textContent = activeRulesCount;
   document.getElementById('instance-responses-today').textContent = '0';
 }
 
@@ -302,6 +378,19 @@ function renderInstances() {
     const statusIcon = getStatusIcon(instance.status);
     const statusText = getStatusText(instance.status);
     
+    // Contar reglas totales en la instancia
+    let totalRules = 0;
+    if (instance.rulesGroups) {
+      Object.values(instance.rulesGroups).forEach(group => {
+        if (group.rules) {
+          totalRules += group.rules.length;
+        }
+      });
+    } else if (instance.rules) {
+      // Compatibilidad con formato anterior
+      totalRules = instance.rules.length;
+    }
+    
     return `
       <div class="instance-item ${isSelected ? 'selected' : ''}" onclick="selectInstance('${instance.id}')">
         <div class="instance-header">
@@ -311,6 +400,9 @@ function renderInstances() {
               ${statusIcon} ${statusText}
             </div>
             ${instance.phoneNumber ? `<div class="instance-phone">📱 +506 ${instance.phoneNumber.substring(3, 7)}-${instance.phoneNumber.substring(7)}</div>` : ''}
+            <div style="font-size: 11px; color: var(--text-secondary); margin-top: 4px;">
+              ${totalRules} regla${totalRules !== 1 ? 's' : ''} • ${Object.keys(instance.rulesGroups || {}).length} grupo${Object.keys(instance.rulesGroups || {}).length !== 1 ? 's' : ''}
+            </div>
           </div>
         </div>
       </div>

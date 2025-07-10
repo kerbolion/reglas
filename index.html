@@ -106,15 +106,24 @@
             <button onclick="addRule()">➕ Nueva Regla</button>
           </div>
           
-          <!-- Selector de grupo de reglas -->
-          <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 20px;">
-            <label style="margin: 0; font-weight: 600;">Grupo:</label>
-            <select id="rules-group-selector" onchange="changeRulesGroup()" style="min-width: 200px;">
-              <option value="all">Todas las reglas</option>
-              <option value="active">Solo activas</option>
-              <option value="inactive">Solo inactivas</option>
-            </select>
-            <button class="btn-small" onclick="addRulesGroup()">➕ Nuevo Grupo</button>
+          <!-- Gestión de Grupos de Reglas -->
+          <div class="section">
+            <h3>📁 Grupos de Reglas</h3>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Grupo actual:</label>
+                <select id="rules-group-selector" onchange="changeRulesGroup()">
+                  <!-- Los grupos se renderizarán aquí -->
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Nombre:</label>
+                <input type="text" id="rules-group-name" onblur="renameRulesGroup()" placeholder="Nombre del grupo...">
+              </div>
+            </div>
+            <div class="form-row" id="rules-group-controls">
+              <!-- Los controles se renderizarán aquí -->
+            </div>
           </div>
           
           <div id="rules-container" class="rules-grid">
@@ -306,6 +315,8 @@
       </div>
     </div>
   </div>
+
+  <!-- Modal para editar reglas -->
   <div id="rule-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
     <div style="background: var(--bg-secondary); border-radius: 12px; padding: 24px; width: 95%; max-width: 1000px; max-height: 90vh; overflow-y: auto;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">

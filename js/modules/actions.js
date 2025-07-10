@@ -1,5 +1,5 @@
 // ==========================================
-// GESTIÓN DE ACCIONES CON REORDENAMIENTO
+// GESTIÓN DE ACCIONES CON REORDENAMIENTO Y DUPLICACIÓN
 // ==========================================
 
 function addAction() {
@@ -55,7 +55,24 @@ function removeAction(index) {
 }
 
 // ==========================================
-// NUEVA FUNCIÓN DE REORDENAMIENTO DE ACCIONES
+// NUEVA FUNCIÓN DE DUPLICACIÓN DE ACCIONES
+// ==========================================
+function duplicateAction(index) {
+  if (!state.currentEditingActions || index >= state.currentEditingActions.length) return;
+  
+  const originalAction = state.currentEditingActions[index];
+  const duplicatedAction = {
+    ...JSON.parse(JSON.stringify(originalAction)), // Copia profunda
+    id: Date.now() + Math.random(), // Nuevo ID único
+  };
+  
+  // Insertar la acción duplicada justo después de la original
+  state.currentEditingActions.splice(index + 1, 0, duplicatedAction);
+  renderActions();
+}
+
+// ==========================================
+// FUNCIÓN DE REORDENAMIENTO DE ACCIONES
 // ==========================================
 function moveAction(index, direction) {
   const actions = state.currentEditingActions;
@@ -97,6 +114,7 @@ function renderActions() {
         <div class="action-controls">
           ${index > 0 ? `<button class="action-btn" onclick="moveAction(${index}, -1)" title="Subir">↑</button>` : ''}
           ${index < actions.length - 1 ? `<button class="action-btn" onclick="moveAction(${index}, 1)" title="Bajar">↓</button>` : ''}
+          <button class="action-btn" onclick="duplicateAction(${index})" title="Duplicar acción">📋</button>
           <button class="action-btn btn-danger" onclick="removeAction(${index})" title="Eliminar">×</button>
         </div>
       </div>

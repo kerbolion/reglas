@@ -37,6 +37,16 @@
       <div class="section" id="instance-details" style="display: none;">
         <h3>🔧 Detalles de Instancia</h3>
         
+        <!-- Nombre de la instancia y número de WhatsApp -->
+        <div style="margin-bottom: 16px; padding: 12px; background: var(--bg-tertiary); border-radius: 6px;">
+          <div style="font-weight: 600; font-size: 16px; color: var(--text-primary); margin-bottom: 4px;" id="instance-display-name">
+            Nombre de Instancia
+          </div>
+          <div style="font-size: 12px; color: var(--text-secondary);" id="instance-whatsapp-number">
+            WhatsApp no conectado
+          </div>
+        </div>
+        
         <div class="instance-info-grid">
           <div class="info-item">
             <label>ID:</label>
@@ -57,10 +67,25 @@
         </div>
         
         <div class="instance-actions-grid">
-          <button class="btn-small btn-success" onclick="connectInstanceWhatsApp()" id="connect-btn">🔗 Vincular</button>
-          <button class="btn-small btn-warning" onclick="disconnectInstanceWhatsApp()" id="disconnect-btn" style="display: none;">🔌 Desconectar</button>
-          <button class="btn-small" onclick="restartInstance()">🔄 Reiniciar</button>
-          <button class="btn-small" onclick="copyInstanceToken()">🔑 Token</button>
+          <div class="instance-actions-row">
+            <button class="btn-small btn-success" onclick="connectInstanceWhatsApp()" id="connect-btn">🔗 Vincular</button>
+            <button class="btn-small btn-warning" onclick="disconnectInstanceWhatsApp()" id="disconnect-btn" style="display: none;">🔌 Desconectar</button>
+          </div>
+          <div class="instance-actions-row">
+            <button class="btn-small" onclick="restartInstance()">🔄 Reiniciar</button>
+            <button class="btn-small" onclick="copyInstanceToken()">🔑 Token</button>
+          </div>
+          <div class="instance-actions-row">
+            <button class="btn-small" onclick="importInstanceData()">📥 Importar</button>
+            <button class="btn-small" onclick="exportInstanceData()">📤 Exportar</button>
+          </div>
+          <div class="instance-actions-row">
+            <button class="btn-small" onclick="transferSession()">🔄 Transferir</button>
+            <button class="btn-small" onclick="openTemplateModal()">📋 Plantilla</button>
+          </div>
+          <div class="instance-actions-row">
+            <button class="btn-small" onclick="duplicateInstance()">📋 Duplicar</button>
+          </div>
         </div>
       </div>
 
@@ -103,7 +128,11 @@
         <div id="rules-section" style="display: none;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
             <h2 id="rules-title">Reglas de Respuesta Automática</h2>
-            <button onclick="addRule()">➕ Nueva Regla</button>
+            <div style="display: flex; gap: 8px;">
+              <button class="btn-small btn-danger" onclick="deleteAIAgent()">🤖 Eliminar Agente IA</button>
+              <button class="btn-small btn-warning" onclick="resetMatches()">🔄 Resetear Coincidencias</button>
+              <button onclick="addRule()">➕ Nueva Regla</button>
+            </div>
           </div>
           
           <!-- Gestión de Grupos de Reglas -->
@@ -160,28 +189,107 @@
             </div>
 
             <div class="form-group">
-              <label>Nombre del negocio:</label>
-              <input type="text" id="business-name" placeholder="Ej. Mi Restaurante" oninput="saveInstanceConfig()">
+              <label>Zona horaria:</label>
+              <select id="timezone-selector" onchange="saveInstanceConfig()">
+                <option value="America/Costa_Rica">America/Costa_Rica (UTC-6)</option>
+                <option value="America/Mexico_City">America/Mexico_City (UTC-6)</option>
+                <option value="America/Guatemala">America/Guatemala (UTC-6)</option>
+                <option value="America/Tegucigalpa">America/Tegucigalpa (UTC-6)</option>
+                <option value="America/Managua">America/Managua (UTC-6)</option>
+                <option value="America/El_Salvador">America/El_Salvador (UTC-6)</option>
+                <option value="America/Panama">America/Panama (UTC-5)</option>
+                <option value="America/Bogota">America/Bogota (UTC-5)</option>
+                <option value="America/Lima">America/Lima (UTC-5)</option>
+                <option value="America/Caracas">America/Caracas (UTC-4)</option>
+                <option value="America/New_York">America/New_York (UTC-5/-4)</option>
+                <option value="America/Los_Angeles">America/Los_Angeles (UTC-8/-7)</option>
+                <option value="Europe/Madrid">Europe/Madrid (UTC+1/+2)</option>
+                <option value="Europe/London">Europe/London (UTC+0/+1)</option>
+                <option value="Asia/Tokyo">Asia/Tokyo (UTC+9)</option>
+                <option value="Australia/Sydney">Australia/Sydney (UTC+10/+11)</option>
+              </select>
             </div>
 
             <div class="form-group">
-              <label>Mensaje de bienvenida por defecto:</label>
-              <textarea id="default-message" placeholder="¡Hola! Gracias por contactarnos..." oninput="saveInstanceConfig()"></textarea>
+              <label>Token de la instancia:</label>
+              <div style="display: flex; gap: 8px; align-items: center;">
+                <input type="text" id="instance-token" readonly style="flex: 1; background: var(--bg-tertiary); cursor: not-allowed;">
+                <button class="btn-small" onclick="copyInstanceToken()">📋 Copiar</button>
+                <button class="btn-small btn-warning" onclick="regenerateToken()">🔄 Regenerar</button>
+              </div>
+              <small style="color: var(--text-secondary); font-size: 12px; display: block; margin-top: 4px;">
+                Este token es único para tu instancia y se usa para conectar con la API
+              </small>
             </div>
+          </div>
 
-            <div class="form-group">
-              <label>Horario de atención:</label>
-              <div class="form-row">
-                <input type="time" id="start-time" value="08:00" onchange="saveInstanceConfig()">
-                <input type="time" id="end-time" value="18:00" onchange="saveInstanceConfig()">
+          <!-- Sub-pestañas para Integraciones y Conectores -->
+          <div class="sub-tabs">
+            <button class="sub-tab active" onclick="showConfigSubTab(0)">🔗 Integraciones</button>
+            <button class="sub-tab" onclick="showConfigSubTab(1)">🔌 Conectores</button>
+          </div>
+          
+          <!-- Integraciones -->
+          <div class="sub-tab-content active" id="config-tab-0">
+            <div style="margin-bottom: 24px;">
+              <h3>Integraciones Disponibles</h3>
+              <p style="color: var(--text-secondary); margin-bottom: 20px;">
+                Conecta tu instancia con servicios externos para ampliar la funcionalidad
+              </p>
+            </div>
+            <div id="integrations-container">
+              <div class="empty-state">
+                <div class="icon">🔗</div>
+                <h3>Integraciones en desarrollo</h3>
+                <p>Próximamente podrás conectar con CRM, bases de datos y más servicios</p>
               </div>
             </div>
+          </div>
+          
+          <!-- Conectores -->
+          <div class="sub-tab-content" id="config-tab-1">
+            <div style="margin-bottom: 24px;">
+              <h3>Conectores Externos</h3>
+              <p style="color: var(--text-secondary); margin-bottom: 20px;">
+                Configura webhooks y conexiones API para sincronizar datos
+              </p>
+            </div>
+            <div id="connectors-container">
+              <div class="empty-state">
+                <div class="icon">🔌</div>
+                <h3>Conectores en desarrollo</h3>
+                <p>Próximamente podrás configurar webhooks, APIs y más conectores</p>
+              </div>
+            </div>
+          </div>
 
-            <div class="form-group">
-              <label class="checkbox-label">
-                <input type="checkbox" id="only-business-hours" onchange="saveInstanceConfig()">
-                <span>Solo responder en horario de atención</span>
-              </label>
+          <!-- Sección de Acciones Críticas -->
+          <div class="section" style="border: 2px solid var(--danger); background: rgba(239, 68, 68, 0.05);">
+            <h3 style="color: var(--danger);">⚠️ Acciones Críticas</h3>
+            <p style="color: var(--text-secondary); margin-bottom: 20px; font-size: 14px;">
+              <strong>Atención:</strong> Estas acciones son irreversibles y pueden afectar el funcionamiento de tu instancia.
+            </p>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+              <div style="background: var(--bg-tertiary); padding: 16px; border-radius: 6px;">
+                <h4 style="color: var(--text-primary); margin-bottom: 8px;">🔄 Restablecer Instancia</h4>
+                <p style="color: var(--text-secondary); font-size: 13px; margin-bottom: 12px;">
+                  Limpia todas las configuraciones pero mantiene las reglas y datos
+                </p>
+                <button class="btn-small btn-warning" onclick="resetInstance()">
+                  🔄 Restablecer
+                </button>
+              </div>
+              
+              <div style="background: var(--bg-tertiary); padding: 16px; border-radius: 6px;">
+                <h4 style="color: var(--danger); margin-bottom: 8px;">🗑️ Eliminar Instancia</h4>
+                <p style="color: var(--text-secondary); font-size: 13px; margin-bottom: 12px;">
+                  Elimina permanentemente la instancia y todos sus datos
+                </p>
+                <button class="btn-small btn-danger" onclick="deleteInstanceFromConfig()">
+                  🗑️ Eliminar
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -316,6 +424,56 @@
     </div>
   </div>
 
+  <!-- Modal para seleccionar plantilla -->
+  <div id="template-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+    <div style="background: var(--bg-secondary); border-radius: 12px; padding: 24px; width: 500px; max-height: 80vh; overflow-y: auto;">
+      <h3 style="margin-bottom: 20px; color: var(--text-accent);">📋 Seleccionar Plantilla</h3>
+      
+      <div id="templates-list" style="margin-bottom: 20px;">
+        <div class="empty-state" style="padding: 20px;">
+          <div style="font-size: 2rem; margin-bottom: 8px;">📋</div>
+          <p style="font-size: 14px;">No hay plantillas disponibles</p>
+          <p style="font-size: 12px; color: var(--text-secondary);">Las plantillas estarán disponibles próximamente</p>
+        </div>
+      </div>
+      
+      <div style="display: flex; gap: 12px; justify-content: flex-end;">
+        <button onclick="closeTemplateModal()" class="btn-small">Cancelar</button>
+        <button onclick="applyTemplate()" style="display: none;">Aplicar Plantilla</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal para transferir sesión -->
+  <div id="transfer-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+    <div style="background: var(--bg-secondary); border-radius: 12px; padding: 24px; width: 450px;">
+      <h3 style="margin-bottom: 20px; color: var(--text-accent);">🔄 Transferir Sesión</h3>
+      
+      <p style="color: var(--text-secondary); margin-bottom: 20px; font-size: 14px;">
+        Selecciona la instancia de destino para transferir la sesión de WhatsApp actual.
+      </p>
+      
+      <div class="form-group">
+        <label>Instancia de destino:</label>
+        <select id="transfer-target-instance">
+          <option value="">Seleccionar instancia...</option>
+          <!-- Se llenarán dinámicamente -->
+        </select>
+      </div>
+      
+      <div style="background: var(--bg-tertiary); padding: 12px; border-radius: 6px; margin: 16px 0;">
+        <p style="font-size: 13px; color: var(--text-secondary);">
+          <strong>Nota:</strong> Esta acción desconectará WhatsApp de la instancia actual y lo conectará a la instancia seleccionada.
+        </p>
+      </div>
+      
+      <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
+        <button onclick="closeTransferModal()" class="btn-small">Cancelar</button>
+        <button onclick="executeTransfer()" class="btn-small btn-warning">🔄 Transferir</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Modal para editar reglas -->
   <div id="rule-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
     <div style="background: var(--bg-secondary); border-radius: 12px; padding: 24px; width: 95%; max-width: 1000px; max-height: 90vh; overflow-y: auto;">
@@ -342,9 +500,10 @@
           <div class="form-group">
             <label>Tipo de coincidencia:</label>
             <select id="rule-match-type">
-              <option value="contains">Contiene cualquier palabra</option>
-              <option value="exact">Coincidencia exacta</option>
-              <option value="starts">Comienza con</option>
+              <option value="contains">Contiene</option>
+              <option value="exact">Exacta</option>
+              <option value="starts">Al Inicio</option>
+              <option value="ends">Al Final</option>
             </select>
           </div>
           
@@ -352,6 +511,175 @@
             <label class="checkbox-label">
               <input type="checkbox" id="rule-active" checked>
               <span>Regla activa</span>
+            </label>
+          </div>
+
+          <!-- Comportamiento -->
+          <div class="form-group">
+            <h5 style="margin-bottom: 12px; color: var(--text-primary);">🔧 Comportamiento</h5>
+            
+            <label class="checkbox-label">
+              <input type="checkbox" id="rule-process-variables">
+              <span>Procesar variables de instancia antes de ejecutar la coincidencia</span>
+            </label>
+            
+            <label class="checkbox-label">
+              <input type="checkbox" id="rule-case-sensitive">
+              <span>Sensibilidad a mayúsculas</span>
+            </label>
+            
+            <label class="checkbox-label">
+              <input type="checkbox" id="rule-no-match">
+              <span>No hacer coincidir</span>
+            </label>
+          </div>
+
+          <!-- Pausar -->
+          <div class="form-group">
+            <h5 style="margin-bottom: 12px; color: var(--text-primary);">⏸️ Pausar</h5>
+            
+            <div class="form-row">
+              <div style="flex: 1;">
+                <label>Tiempo:</label>
+                <input type="number" id="rule-pause-time" min="0" placeholder="0">
+              </div>
+              <div style="flex: 1;">
+                <label>Unidad:</label>
+                <select id="rule-pause-unit">
+                  <option value="seconds">Segundos</option>
+                  <option value="minutes">Minutos</option>
+                  <option value="hours">Horas</option>
+                  <option value="days">Días</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Responder a -->
+          <div class="form-group">
+            <h5 style="margin-bottom: 12px; color: var(--text-primary);">💬 Responder a</h5>
+            
+            <div style="margin-bottom: 12px;">
+              <label class="checkbox-label">
+                <input type="radio" name="rule-respond-to" id="rule-respond-chats" value="chats" checked>
+                <span>Chats</span>
+              </label>
+              
+              <label class="checkbox-label">
+                <input type="radio" name="rule-respond-to" id="rule-respond-groups" value="groups">
+                <span>Grupos</span>
+              </label>
+              
+              <label class="checkbox-label">
+                <input type="radio" name="rule-respond-to" id="rule-respond-all" value="all">
+                <span>Todos</span>
+              </label>
+            </div>
+
+            <div class="form-group">
+              <label>Contactos Receptores:</label>
+              <div style="margin-top: 8px;">
+                <label class="checkbox-label">
+                  <input type="radio" name="rule-contacts" id="rule-contacts-all" value="all" checked>
+                  <span>Todos</span>
+                </label>
+                
+                <label class="checkbox-label">
+                  <input type="radio" name="rule-contacts" id="rule-contacts-specific" value="specific">
+                  <span>Específicos</span>
+                </label>
+                
+                <label class="checkbox-label">
+                  <input type="radio" name="rule-contacts" id="rule-contacts-ignored" value="ignored">
+                  <span>Ignorados</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Variable de Contacto -->
+          <div class="form-group">
+            <h5 style="margin-bottom: 12px; color: var(--text-primary);">📋 Variable de Contacto</h5>
+            
+            <div class="form-row">
+              <div style="flex: 1;">
+                <label>Elija Variable:</label>
+                <select id="rule-contact-variable">
+                  <option value="">Sin Variable</option>
+                  <!-- Se llenará dinámicamente con las variables de la instancia -->
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Contacto de Reenvío -->
+          <div class="form-group">
+            <h5 style="margin-bottom: 12px; color: var(--text-primary);">📤 Contacto de Reenvío</h5>
+            
+            <label class="checkbox-label">
+              <input type="checkbox" id="rule-forward-client-request">
+              <span>Su cliente pide un agente</span>
+            </label>
+            
+            <div class="form-group">
+              <label>Contactos de notificación (sin el "+"):</label>
+              <input type="text" id="rule-notification-contacts" placeholder="Separados por coma (,)">
+            </div>
+            
+            <div class="form-group">
+              <label>Mensaje de notificación:</label>
+              <textarea id="rule-notification-message" placeholder="Mensaje que se enviará como notificación"></textarea>
+            </div>
+          </div>
+
+          <!-- Menú y Submenú -->
+          <div class="form-group">
+            <h5 style="margin-bottom: 12px; color: var(--text-primary);">📋 Menú y Submenú</h5>
+            
+            <div class="form-group">
+              <label>Ir a Regla #:</label>
+              <select id="rule-goto-rule">
+                <option value="">Sin Regla</option>
+                <!-- Se llenará dinámicamente con las reglas disponibles -->
+              </select>
+              
+              <label class="checkbox-label" style="margin-top: 8px;">
+                <input type="checkbox" id="rule-goto-previous">
+                <span>Regla anterior</span>
+              </label>
+            </div>
+            
+            <div class="form-group">
+              <label>Regla Padre:</label>
+              <select id="rule-parent-rule">
+                <option value="">Sin Regla</option>
+                <!-- Se llenará dinámicamente con las reglas disponibles -->
+              </select>
+            </div>
+            
+            <div class="form-group">
+              <label>Hijos:</label>
+              <input type="text" id="rule-children" placeholder="Sin hijos" readonly>
+              
+              <label class="checkbox-label" style="margin-top: 8px;">
+                <input type="checkbox" id="rule-match-children-directly">
+                <span>Hacer coincidir directamente estas reglas hijas sin ejecutar la regla actual</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Opciones de Visibilidad -->
+          <div class="form-group">
+            <h5 style="margin-bottom: 12px; color: var(--text-primary);">👁️ Opciones de Visibilidad</h5>
+            
+            <label class="checkbox-label">
+              <input type="checkbox" id="rule-quick-responses">
+              <span>Respuestas Rápidas</span>
+            </label>
+            
+            <label class="checkbox-label">
+              <input type="checkbox" id="rule-broadcasts">
+              <span>Difusiones</span>
             </label>
           </div>
         </div>

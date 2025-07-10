@@ -231,8 +231,8 @@ button:hover {
 
 /* Información de instancia */
 .instance-info-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  display: flex;
+  flex-direction: column;
   gap: 12px;
   margin-bottom: 16px;
 }
@@ -260,9 +260,20 @@ button:hover {
 }
 
 .instance-actions-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  display: flex;
+  flex-direction: column;
   gap: 8px;
+}
+
+.instance-actions-row {
+  display: flex;
+  gap: 8px;
+}
+
+.instance-actions-row .btn-small {
+  flex: 1;
+  text-align: center;
+  min-width: 0;
 }
 
 /* Grid de reglas */
@@ -767,11 +778,11 @@ button:hover {
   }
   
   .instance-info-grid {
-    grid-template-columns: 1fr;
+    flex-direction: column;
   }
   
-  .instance-actions-grid {
-    grid-template-columns: 1fr 1fr;
+  .instance-actions-row {
+    flex-direction: column;
   }
 
   /* Ajustes para controles de reglas en móvil */

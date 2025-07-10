@@ -20,12 +20,8 @@ function addInstance() {
     timezone: 'America/Costa_Rica',
     token: generateToken(),
     config: {
-      businessName: '',
-      defaultMessage: '',
-      startTime: '08:00',
-      endTime: '18:00',
-      onlyBusinessHours: false,
-      autoResponderActive: false
+      autoResponderActive: false,
+      timezone: 'America/Costa_Rica'
     },
     // Nueva estructura de grupos de reglas
     rulesGroups: {
@@ -55,6 +51,21 @@ function generateToken() {
   });
 }
 
+function regenerateToken() {
+  const instance = getCurrentInstance();
+  if (!instance) {
+    alert('Selecciona una instancia primero');
+    return;
+  }
+  
+  if (confirm('¿Regenerar el token? El token actual dejará de funcionar.')) {
+    instance.token = generateToken();
+    document.getElementById('instance-token').value = instance.token;
+    saveData();
+    alert('Token regenerado exitosamente');
+  }
+}
+
 function deleteInstance(instanceId) {
   const instance = state.instances.find(i => i.id === instanceId);
   if (!instance) return;
@@ -74,6 +85,128 @@ function deleteInstance(instanceId) {
   }
 }
 
+function deleteInstanceFromConfig() {
+  const instance = getCurrentInstance();
+  if (!instance) {
+    alert('No hay instancia seleccionada');
+    return;
+  }
+  
+  const confirmText = `ELIMINAR ${instance.name.toUpperCase()}`;
+  const userInput = prompt(
+    `Esta acción eliminará permanentemente la instancia "${instance.name}" y todos sus datos.\n\n` +
+    `Para confirmar, escribe exactamente: ${confirmText}`
+  );
+  
+  if (userInput === confirmText) {
+    deleteInstance(instance.id);
+    alert('Instancia eliminada exitosamente');
+  } else if (userInput !== null) {
+    alert('Texto de confirmación incorrecto. Operación cancelada.');
+  }
+}
+
+function resetInstance() {
+  const instance = getCurrentInstance();
+  if (!instance) {
+    alert('No hay instancia seleccionada');
+    return;
+  }
+  
+  if (confirm(`¿Restablecer la configuración de "${instance.name}"? Se mantendrán las reglas y datos.`)) {
+    // Restablecer solo la configuración, mantener datos
+    instance.config = {
+      autoResponderActive: false,
+      timezone: 'America/Costa_Rica'
+    };
+    instance.status = 'disconnected';
+    instance.phoneNumber = null;
+    
+    // Recargar datos en la UI
+    loadInstanceData();
+    updateInstanceUI();
+    renderInstances();
+    saveData();
+    
+    alert('Instancia restablecida exitosamente');
+  }
+}
+
+function duplicateInstance() {
+  const instance = getCurrentInstance();
+  if (!instance) {
+    alert('Selecciona una instancia primero');
+    return;
+  }
+  
+  const newName = prompt('Nombre para la instancia duplicada:', `${instance.name} (Copia)`);
+  if (!newName || newName.trim() === '') return;
+  
+  // Crear una copia profunda de la instancia
+  const duplicatedInstance = {
+    ...JSON.parse(JSON.stringify(instance)),
+    id: generateId(),
+    name: newName.trim(),
+    status: 'disconnected',
+    phoneNumber: null,
+    instanceId: 604 + state.instances.length,
+    subscription: '#' + (2283 + state.instances.length),
+    token: generateToken(),
+    created: new Date().toISOString()
+  };
+  
+  // Regenerar IDs únicos para reglas, variables, etc.
+  if (duplicatedInstance.rulesGroups) {
+    const newRulesGroups = {};
+    Object.entries(duplicatedInstance.rulesGroups).forEach(([groupKey, group]) => {
+      const newGroupKey = generateId();
+      newRulesGroups[newGroupKey] = {
+        ...group,
+        rules: group.rules.map(rule => ({
+          ...rule,
+          created: new Date().toISOString()
+        }))
+      };
+    });
+    duplicatedInstance.rulesGroups = newRulesGroups;
+  }
+  
+  if (duplicatedInstance.variables) {
+    duplicatedInstance.variables = duplicatedInstance.variables.map(variable => ({
+      ...variable,
+      id: generateId(),
+      created: new Date().toISOString()
+    }));
+  }
+  
+  if (duplicatedInstance.tags) {
+    duplicatedInstance.tags = duplicatedInstance.tags.map(tag => ({
+      ...tag,
+      id: generateId(),
+      tagId: 'tag_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+      created: new Date().toISOString()
+    }));
+  }
+  
+  if (duplicatedInstance.forms) {
+    duplicatedInstance.forms = duplicatedInstance.forms.map(form => ({
+      ...form,
+      id: generateId(),
+      created: new Date().toISOString(),
+      fields: form.fields.map(field => ({
+        ...field,
+        id: generateId()
+      }))
+    }));
+  }
+  
+  state.instances.push(duplicatedInstance);
+  renderInstances();
+  saveData();
+  
+  alert(`Instancia "${newName}" duplicada exitosamente`);
+}
+
 function selectInstance(instanceId) {
   state.currentInstance = instanceId;
   
@@ -91,6 +224,240 @@ function selectInstance(instanceId) {
   showInstanceContent();
   loadInstanceData();
   showTab(state.currentTab); // Refrescar contenido de la pestaña actual
+}
+
+// ==========================================
+// NUEVAS FUNCIONES DE IMPORTACIÓN/EXPORTACIÓN
+// ==========================================
+
+function exportInstanceData() {
+  const instance = getCurrentInstance();
+  if (!instance) {
+    alert('Selecciona una instancia primero');
+    return;
+  }
+  
+  const exportData = {
+    instance: {
+      name: instance.name,
+      config: instance.config,
+      rulesGroups: instance.rulesGroups,
+      variables: instance.variables,
+      tags: instance.tags,
+      forms: instance.forms
+    },
+    exportDate: new Date().toISOString(),
+    exportedFrom: instance.instanceId,
+    version: '2.0'
+  };
+  
+  const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `instancia-${instance.name.replace(/\s+/g, '-').toLowerCase()}-${new Date().toISOString().slice(0,10)}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  
+  alert('Datos de la instancia exportados exitosamente');
+}
+
+function importInstanceData() {
+  const instance = getCurrentInstance();
+  if (!instance) {
+    alert('Selecciona una instancia primero');
+    return;
+  }
+  
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.json';
+  
+  input.onchange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const importData = JSON.parse(e.target.result);
+        
+        if (!importData.instance) {
+          alert('Archivo de importación inválido');
+          return;
+        }
+        
+        const confirmMessage = `¿Importar datos desde "${importData.instance.name}"?\n\n` +
+                             `Esto sobrescribirá:\n` +
+                             `- Configuración actual\n` +
+                             `- Todas las reglas y grupos\n` +
+                             `- Variables, etiquetas y formularios\n\n` +
+                             `¿Continuar?`;
+        
+        if (confirm(confirmMessage)) {
+          // Importar datos manteniendo información de la instancia actual
+          instance.config = { ...instance.config, ...importData.instance.config };
+          instance.rulesGroups = importData.instance.rulesGroups || {};
+          instance.variables = importData.instance.variables || [];
+          instance.tags = importData.instance.tags || [];
+          instance.forms = importData.instance.forms || [];
+          
+          // Regenerar IDs únicos para evitar conflictos
+          regenerateImportedIds(instance);
+          
+          // Seleccionar primer grupo después de importar
+          const firstGroupKey = Object.keys(instance.rulesGroups)[0];
+          if (firstGroupKey) {
+            state.currentRulesGroup = firstGroupKey;
+          }
+          
+          saveData();
+          loadInstanceData();
+          renderAll();
+          
+          alert('Datos importados exitosamente');
+        }
+      } catch (error) {
+        console.error('Error importing data:', error);
+        alert('Error al importar archivo: ' + error.message);
+      }
+    };
+    reader.readAsText(file);
+  };
+  
+  input.click();
+}
+
+function regenerateImportedIds(instance) {
+  // Regenerar IDs de grupos de reglas
+  if (instance.rulesGroups) {
+    const newRulesGroups = {};
+    Object.values(instance.rulesGroups).forEach(group => {
+      const newGroupKey = generateId();
+      newRulesGroups[newGroupKey] = group;
+    });
+    instance.rulesGroups = newRulesGroups;
+  }
+  
+  // Regenerar IDs de variables
+  if (instance.variables) {
+    instance.variables.forEach(variable => {
+      variable.id = generateId();
+    });
+  }
+  
+  // Regenerar IDs de etiquetas
+  if (instance.tags) {
+    instance.tags.forEach(tag => {
+      tag.id = generateId();
+      tag.tagId = 'tag_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+    });
+  }
+  
+  // Regenerar IDs de formularios
+  if (instance.forms) {
+    instance.forms.forEach(form => {
+      form.id = generateId();
+      if (form.fields) {
+        form.fields.forEach(field => {
+          field.id = generateId();
+        });
+      }
+    });
+  }
+}
+
+// ==========================================
+// FUNCIONES DE TRANSFERENCIA DE SESIÓN
+// ==========================================
+
+function transferSession() {
+  const instance = getCurrentInstance();
+  if (!instance) {
+    alert('Selecciona una instancia primero');
+    return;
+  }
+  
+  if (instance.status !== 'connected') {
+    alert('La instancia actual no tiene una sesión de WhatsApp activa');
+    return;
+  }
+  
+  // Llenar el selector con otras instancias
+  const targetSelector = document.getElementById('transfer-target-instance');
+  const otherInstances = state.instances.filter(i => i.id !== instance.id);
+  
+  targetSelector.innerHTML = '<option value="">Seleccionar instancia...</option>' +
+    otherInstances.map(inst => 
+      `<option value="${inst.id}">${escapeHtml(inst.name)} ${inst.status === 'connected' ? '(Conectada)' : ''}</option>`
+    ).join('');
+  
+  document.getElementById('transfer-modal').style.display = 'flex';
+}
+
+function closeTransferModal() {
+  document.getElementById('transfer-modal').style.display = 'none';
+  document.getElementById('transfer-target-instance').value = '';
+}
+
+function executeTransfer() {
+  const sourceInstance = getCurrentInstance();
+  const targetInstanceId = document.getElementById('transfer-target-instance').value;
+  
+  if (!targetInstanceId) {
+    alert('Selecciona una instancia de destino');
+    return;
+  }
+  
+  const targetInstance = state.instances.find(i => i.id === targetInstanceId);
+  if (!targetInstance) {
+    alert('Instancia de destino no encontrada');
+    return;
+  }
+  
+  if (confirm(`¿Transferir la sesión de WhatsApp desde "${sourceInstance.name}" a "${targetInstance.name}"?`)) {
+    // Simular transferencia
+    targetInstance.status = 'connected';
+    targetInstance.phoneNumber = sourceInstance.phoneNumber;
+    
+    sourceInstance.status = 'disconnected';
+    sourceInstance.phoneNumber = null;
+    
+    closeTransferModal();
+    updateInstanceUI();
+    renderInstances();
+    saveData();
+    
+    alert(`Sesión transferida exitosamente a "${targetInstance.name}"`);
+  }
+}
+
+// ==========================================
+// FUNCIONES DE PLANTILLAS
+// ==========================================
+
+function openTemplateModal() {
+  const instance = getCurrentInstance();
+  if (!instance) {
+    alert('Selecciona una instancia primero');
+    return;
+  }
+  
+  // Futuro: llenar con plantillas disponibles
+  document.getElementById('template-modal').style.display = 'flex';
+}
+
+function closeTemplateModal() {
+  document.getElementById('template-modal').style.display = 'none';
+}
+
+function applyTemplate() {
+  // Futuro: aplicar plantilla seleccionada
+  alert('Funcionalidad de plantillas en desarrollo');
+  closeTemplateModal();
 }
 
 // ==========================================
@@ -133,6 +500,11 @@ function migrateInstanceDataStructure() {
   if (!instance.variables) instance.variables = [];
   if (!instance.tags) instance.tags = [];
   if (!instance.forms) instance.forms = [];
+  
+  // Migrar configuración al nuevo formato
+  if (!instance.config.timezone) {
+    instance.config.timezone = instance.timezone || 'America/Costa_Rica';
+  }
 }
 
 function showInstanceContent() {
@@ -293,19 +665,25 @@ function loadInstanceData() {
   // Migrar datos si es necesario antes de cargar
   migrateInstanceDataStructure();
   
-  // Cargar información de la instancia
+  // Cargar información de la instancia en detalles
+  document.getElementById('instance-display-name').textContent = instance.name;
+  
+  if (instance.phoneNumber) {
+    const formattedNumber = `+506 ${instance.phoneNumber.substring(3, 7)}-${instance.phoneNumber.substring(7)}`;
+    document.getElementById('instance-whatsapp-number').textContent = `📱 WhatsApp: ${formattedNumber}`;
+  } else {
+    document.getElementById('instance-whatsapp-number').textContent = '📱 WhatsApp no conectado';
+  }
+  
   document.getElementById('instance-id').textContent = instance.instanceId;
   document.getElementById('instance-subscription').textContent = instance.subscription;
   document.getElementById('instance-package').textContent = instance.package;
-  document.getElementById('instance-timezone').textContent = instance.timezone;
+  document.getElementById('instance-timezone').textContent = instance.config.timezone || instance.timezone;
   
   // Cargar configuración de la instancia en la UI
-  document.getElementById('business-name').value = instance.config.businessName;
-  document.getElementById('default-message').value = instance.config.defaultMessage;
-  document.getElementById('start-time').value = instance.config.startTime;
-  document.getElementById('end-time').value = instance.config.endTime;
-  document.getElementById('only-business-hours').checked = instance.config.onlyBusinessHours;
-  document.getElementById('autoresponder-active').checked = instance.config.autoResponderActive;
+  document.getElementById('timezone-selector').value = instance.config.timezone || instance.timezone || 'America/Costa_Rica';
+  document.getElementById('instance-token').value = instance.token;
+  document.getElementById('autoresponder-active').checked = instance.config.autoResponderActive || false;
   
   // Actualizar títulos
   document.getElementById('rules-title').textContent = `Reglas - ${instance.name}`;

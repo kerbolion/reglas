@@ -108,414 +108,266 @@
     <!-- Contenido principal -->
     <div class="main-content">
       <!-- Pestañas -->
-      <div class="tabs" id="main-tabs">
+      <div class="tabs">
         <button class="tab active" onclick="showTab(0)">📝 Reglas</button>
         <button class="tab" onclick="showTab(1)">⚙️ Configuración</button>
         <button class="tab" onclick="showTab(2)">🗂️ Gestión de Datos</button>
         <button class="tab" onclick="showTab(3)">📈 Analíticas</button>
       </div>
 
-      <!-- Contenedor para el generador de flujos IA (inicialmente oculto) -->
-      <div id="ai-trainer-container" style="display: none;">
-        <!-- Aquí se cargará la interfaz del generador de flujos IA -->
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 2px solid var(--border-primary);">
-          <h2 style="color: var(--text-accent); margin: 0;">🤖 Entrenar Agente IA</h2>
-          <button class="btn-small btn-warning" onclick="exitAITrainer()">← Volver a Reglas</button>
+      <!-- Contenido de pestañas -->
+      
+      <!-- Pestaña Reglas -->
+      <div class="tab-content active" id="tab-0">
+        <div id="no-instance-message" class="empty-state">
+          <div class="icon">📱</div>
+          <h3>Selecciona una instancia</h3>
+          <p>Crea o selecciona una instancia para gestionar sus reglas</p>
         </div>
         
-        <!-- Gestión de Proyectos -->
-        <div class="section projects-section">
-          <h3>📁 Proyectos de Entrenamiento</h3>
-          <div class="form-row">
-            <div class="form-group">
-              <label>Proyecto actual:</label>
-              <select id="project-selector" onchange="aiTrainer.projects.loadProject(this.value)">
-                <option value="">Nuevo proyecto...</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label>Versión:</label>
-              <select id="version-selector" onchange="aiTrainer.projects.loadVersion(this.value)">
-                <option value="">Seleccionar versión...</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label>Nombre:</label>
-              <input type="text" id="project-name" placeholder="Nombre del proyecto">
+        <div id="rules-section" style="display: none;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+            <h2 id="rules-title">Reglas de Respuesta Automática</h2>
+            <div style="display: flex; gap: 8px;">
+              <button class="btn-small btn-danger" onclick="deleteAIAgent()">🤖 Eliminar Agente IA</button>
+              <button class="btn-small btn-warning" onclick="resetMatches()">🔄 Resetear Coincidencias</button>
+              <button onclick="addRule()">➕ Nueva Regla</button>
             </div>
           </div>
-          <div class="project-controls">
-            <button type="button" class="btn-small" onclick="aiTrainer.projects.saveProject()">💾 Guardar</button>
-            <button type="button" class="btn-small btn-danger" onclick="aiTrainer.projects.deleteProject()">🗑️ Eliminar</button>
-            <button type="button" class="btn-small" onclick="aiTrainer.projects.exportProject()">📤 Exportar</button>
-            <button type="button" class="btn-small" onclick="aiTrainer.projects.importProject()">📥 Importar</button>
-          </div>
-        </div>
-        
-        <!-- Pestañas del Generador de Flujos -->
-        <div class="tabs" id="ai-trainer-tabs">
-          <button class="tab active" onclick="aiTrainer.showTab(0)">⚙️ Config</button>
-          <button class="tab" onclick="aiTrainer.showTab(1)">🔄 Flujos</button>
-          <button class="tab" onclick="aiTrainer.showTab(2)">❓ FAQ</button>
-          <button class="tab" onclick="aiTrainer.showTab(3)">⚡ Funciones</button>
-        </div>
-
-        <!-- Contenido del Generador de Flujos en dos columnas -->
-        <div style="display: flex; gap: 24px; margin-top: 20px;">
-          <!-- Panel de configuración -->
-          <div style="flex: 1; background: var(--bg-secondary); border-radius: 8px; padding: 20px;">
-            <!-- Configuración Básica -->
-            <div class="tab-content active" id="ai-tab-0">
-              <div class="section">
-                <h3>🏪 Información del Negocio</h3>
-                <div class="form-group">
-                  <label>Nombre del Negocio:</label>
-                  <input type="text" id="ai-business-name" placeholder="Ej. Empanadas & Bebidas" oninput="aiTrainer.updatePrompt()">
-                </div>
+          
+          <!-- Gestión de Grupos de Reglas -->
+          <div class="section">
+            <h3>📁 Grupos de Reglas</h3>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Grupo actual:</label>
+                <select id="rules-group-selector" onchange="changeRulesGroup()">
+                  <!-- Los grupos se renderizarán aquí -->
+                </select>
               </div>
-
-              <div class="section">
-                <h3>📋 Secciones de Configuración</h3>
-                <div class="form-row">
-                  <div class="form-group">
-                    <label>Sección actual:</label>
-                    <select id="ai-section-selector" onchange="aiTrainer.changeSection()"></select>
-                  </div>
-                  <div class="form-group">
-                    <label>Nombre:</label>
-                    <input type="text" id="ai-section-name" onblur="aiTrainer.renameSection()" placeholder="Nombre de la sección...">
-                  </div>
-                </div>
-                <div class="form-row" id="ai-section-controls">
-                  <button type="button" class="btn-small" onclick="aiTrainer.addSection()">➕ Nueva Sección</button>
-                  <button type="button" class="btn-small btn-danger" onclick="aiTrainer.deleteSection()">🗑️ Eliminar</button>
-                </div>
-              </div>
-
-              <div>
-                <h3>Contenido de la Sección:</h3>
-                <div id="ai-section-content-container"></div>
-                <div class="form-row">
-                  <button type="button" class="btn-small" onclick="aiTrainer.addTextField()">➕ Campo de Texto</button>
-                  <button type="button" class="btn-small" onclick="aiTrainer.addTextAreaField()">➕ Área de Texto</button>
-                  <button type="button" class="btn-small" onclick="aiTrainer.addListField()">➕ Lista</button>
-                </div>
+              <div class="form-group">
+                <label>Nombre:</label>
+                <input type="text" id="rules-group-name" onblur="renameRulesGroup()" placeholder="Nombre del grupo...">
               </div>
             </div>
-
-            <!-- Gestión de Flujos -->
-            <div class="tab-content" id="ai-tab-1">
-              <div class="section">
-                <h3>🔄 Flujos</h3>
-                <div class="form-row">
-                  <div class="form-group">
-                    <label>Flujo actual:</label>
-                    <select id="ai-flow-selector" onchange="aiTrainer.changeFlow()"></select>
-                  </div>
-                  <div class="form-group">
-                    <label>Nombre:</label>
-                    <input type="text" id="ai-flow-name" onblur="aiTrainer.renameFlow()" placeholder="Nombre del flujo...">
-                  </div>
-                </div>
-                <div class="form-row" id="ai-flow-controls">
-                  <button type="button" class="btn-small" onclick="aiTrainer.addFlow()">➕ Nuevo Flujo</button>
-                  <button type="button" class="btn-small btn-danger" onclick="aiTrainer.deleteFlow()">🗑️ Eliminar</button>
-                </div>
-              </div>
-
-              <div>
-                <h3>Pasos del Flujo:</h3>
-                <div id="ai-steps-container"></div>
-                <button type="button" onclick="aiTrainer.addStep()">➕ Agregar Paso</button>
-              </div>
-            </div>
-
-            <!-- FAQ -->
-            <div class="tab-content" id="ai-tab-2">
-              <div class="section">
-                <h3>❓ Preguntas Frecuentes</h3>
-                <div id="ai-faq-container" class="dynamic-list"></div>
-                <button type="button" class="btn-small" onclick="aiTrainer.addFAQ()">➕ Agregar FAQ</button>
-              </div>
-            </div>
-
-            <!-- Gestión de Funciones -->
-            <div class="tab-content" id="ai-tab-3">
-              <div class="section">
-                <h3>⚡ Funciones Disponibles</h3>
-                <div id="ai-functions-list"></div>
-                <button type="button" class="btn-small" onclick="aiTrainer.functions.addFunction()">➕ Nueva Función</button>
-                <button type="button" class="btn-small" onclick="aiTrainer.functions.loadDefaults()">🔄 Cargar Predeterminadas</button>
-              </div>
+            <div class="form-row" id="rules-group-controls">
+              <!-- Los controles se renderizarán aquí -->
             </div>
           </div>
-
-          <!-- Panel de salida -->
-          <div style="flex: 1; background: var(--output-bg); font-family: 'Consolas', 'Monaco', 'Courier New', monospace; font-size: 14px; line-height: 1.6; white-space: pre-wrap; position: relative; padding: 20px; color: var(--output-text); border-radius: 8px; overflow-y: auto; max-height: 80vh;">
-            <button class="copy-btn" onclick="aiTrainer.copyPrompt(event)" style="top: 10px; left: 10px;">
-              <span>📋</span>
-              <span>Copiar</span>
-            </button>
-            <div id="ai-output"></div>
+          
+          <div id="rules-container" class="rules-grid">
+            <!-- Las reglas se renderizarán aquí -->
           </div>
         </div>
       </div>
 
-      <!-- Contenido de pestañas principales (se oculta cuando está activo el AI Trainer) -->
-      <div id="main-content-tabs">
-        <!-- Pestaña Reglas -->
-        <div class="tab-content active" id="tab-0">
-          <div id="no-instance-message" class="empty-state">
-            <div class="icon">📱</div>
-            <h3>Selecciona una instancia</h3>
-            <p>Crea o selecciona una instancia para gestionar sus reglas</p>
-          </div>
-          
-          <div id="rules-section" style="display: none;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-              <h2 id="rules-title">Reglas de Respuesta Automática</h2>
-              <div style="display: flex; gap: 8px;">
-                <button class="btn-small" onclick="enterAITrainer()">🤖 Entrenar Agente IA</button>
-                <button class="btn-small btn-danger" onclick="deleteAIAgent()">🤖 Eliminar Agente IA</button>
-                <button class="btn-small btn-warning" onclick="resetMatches()">🔄 Resetear Coincidencias</button>
-                <button onclick="addRule()">➕ Nueva Regla</button>
-              </div>
-            </div>
-            
-            <!-- Gestión de Grupos de Reglas -->
-            <div class="section">
-              <h3>📁 Grupos de Reglas</h3>
-              <div class="form-row">
-                <div class="form-group">
-                  <label>Grupo actual:</label>
-                  <select id="rules-group-selector" onchange="changeRulesGroup()">
-                    <!-- Los grupos se renderizarán aquí -->
-                  </select>
-                </div>
-                <div class="form-group">
-                  <label>Nombre:</label>
-                  <input type="text" id="rules-group-name" onblur="renameRulesGroup()" placeholder="Nombre del grupo...">
-                </div>
-              </div>
-              <div class="form-row" id="rules-group-controls">
-                <!-- Los controles se renderizarán aquí -->
-              </div>
-            </div>
-            
-            <div id="rules-container" class="rules-grid">
-              <!-- Las reglas se renderizarán aquí -->
-            </div>
-          </div>
+      <!-- Pestaña Configuración -->
+      <div class="tab-content" id="tab-1">
+        <div id="no-instance-config" class="empty-state">
+          <div class="icon">⚙️</div>
+          <h3>Selecciona una instancia</h3>
+          <p>Crea o selecciona una instancia para configurar sus ajustes</p>
         </div>
+        
+        <div id="config-section" style="display: none;">
+          <h2 id="config-title">Configuración de Instancia</h2>
+          
+          <div class="section">
+            <h3>⚙️ Configuración General</h3>
+            
+            <div class="form-group">
+              <label>Estado del AutoResponder:</label>
+              <div style="display: flex; align-items: center; gap: 12px;">
+                <label class="checkbox-label">
+                  <input type="checkbox" id="autoresponder-active" onchange="toggleAutoResponder()">
+                  <span>Activar AutoResponder</span>
+                </label>
+                <span id="status-indicator" class="status-indicator status-inactive">
+                  <span>⚫</span> Inactivo
+                </span>
+              </div>
+            </div>
 
-        <!-- Pestaña Configuración -->
-        <div class="tab-content" id="tab-1">
-          <div id="no-instance-config" class="empty-state">
-            <div class="icon">⚙️</div>
-            <h3>Selecciona una instancia</h3>
-            <p>Crea o selecciona una instancia para configurar sus ajustes</p>
+            <div class="form-group">
+              <label>Zona horaria:</label>
+              <select id="timezone-selector" onchange="saveInstanceConfig()">
+                <option value="America/Costa_Rica">America/Costa_Rica (UTC-6)</option>
+                <option value="America/Mexico_City">America/Mexico_City (UTC-6)</option>
+                <option value="America/Guatemala">America/Guatemala (UTC-6)</option>
+                <option value="America/Tegucigalpa">America/Tegucigalpa (UTC-6)</option>
+                <option value="America/Managua">America/Managua (UTC-6)</option>
+                <option value="America/El_Salvador">America/El_Salvador (UTC-6)</option>
+                <option value="America/Panama">America/Panama (UTC-5)</option>
+                <option value="America/Bogota">America/Bogota (UTC-5)</option>
+                <option value="America/Lima">America/Lima (UTC-5)</option>
+                <option value="America/Caracas">America/Caracas (UTC-4)</option>
+                <option value="America/New_York">America/New_York (UTC-5/-4)</option>
+                <option value="America/Los_Angeles">America/Los_Angeles (UTC-8/-7)</option>
+                <option value="Europe/Madrid">Europe/Madrid (UTC+1/+2)</option>
+                <option value="Europe/London">Europe/London (UTC+0/+1)</option>
+                <option value="Asia/Tokyo">Asia/Tokyo (UTC+9)</option>
+                <option value="Australia/Sydney">Australia/Sydney (UTC+10/+11)</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>Token de la instancia:</label>
+              <div style="display: flex; gap: 8px; align-items: center;">
+                <input type="text" id="instance-token" readonly style="flex: 1; background: var(--bg-tertiary); cursor: not-allowed;">
+                <button class="btn-small" onclick="copyInstanceToken()">📋 Copiar</button>
+                <button class="btn-small btn-warning" onclick="regenerateToken()">🔄 Regenerar</button>
+              </div>
+              <small style="color: var(--text-secondary); font-size: 12px; display: block; margin-top: 4px;">
+                Este token es único para tu instancia y se usa para conectar con la API
+              </small>
+            </div>
+          </div>
+
+          <!-- Sub-pestañas para Integraciones y Conectores -->
+          <div class="sub-tabs">
+            <button class="sub-tab active" onclick="showConfigSubTab(0)">🔗 Integraciones</button>
+            <button class="sub-tab" onclick="showConfigSubTab(1)">🔌 Conectores</button>
           </div>
           
-          <div id="config-section" style="display: none;">
-            <h2 id="config-title">Configuración de Instancia</h2>
-            
-            <div class="section">
-              <h3>⚙️ Configuración General</h3>
-              
-              <div class="form-group">
-                <label>Estado del AutoResponder:</label>
-                <div style="display: flex; align-items: center; gap: 12px;">
-                  <label class="checkbox-label">
-                    <input type="checkbox" id="autoresponder-active" onchange="toggleAutoResponder()">
-                    <span>Activar AutoResponder</span>
-                  </label>
-                  <span id="status-indicator" class="status-indicator status-inactive">
-                    <span>⚫</span> Inactivo
-                  </span>
-                </div>
-              </div>
-
-              <div class="form-group">
-                <label>Zona horaria:</label>
-                <select id="timezone-selector" onchange="saveInstanceConfig()">
-                  <option value="America/Costa_Rica">America/Costa_Rica (UTC-6)</option>
-                  <option value="America/Mexico_City">America/Mexico_City (UTC-6)</option>
-                  <option value="America/Guatemala">America/Guatemala (UTC-6)</option>
-                  <option value="America/Tegucigalpa">America/Tegucigalpa (UTC-6)</option>
-                  <option value="America/Managua">America/Managua (UTC-6)</option>
-                  <option value="America/El_Salvador">America/El_Salvador (UTC-6)</option>
-                  <option value="America/Panama">America/Panama (UTC-5)</option>
-                  <option value="America/Bogota">America/Bogota (UTC-5)</option>
-                  <option value="America/Lima">America/Lima (UTC-5)</option>
-                  <option value="America/Caracas">America/Caracas (UTC-4)</option>
-                  <option value="America/New_York">America/New_York (UTC-5/-4)</option>
-                  <option value="America/Los_Angeles">America/Los_Angeles (UTC-8/-7)</option>
-                  <option value="Europe/Madrid">Europe/Madrid (UTC+1/+2)</option>
-                  <option value="Europe/London">Europe/London (UTC+0/+1)</option>
-                  <option value="Asia/Tokyo">Asia/Tokyo (UTC+9)</option>
-                  <option value="Australia/Sydney">Australia/Sydney (UTC+10/+11)</option>
-                </select>
-              </div>
-
-              <div class="form-group">
-                <label>Token de la instancia:</label>
-                <div style="display: flex; gap: 8px; align-items: center;">
-                  <input type="text" id="instance-token" readonly style="flex: 1; background: var(--bg-tertiary); cursor: not-allowed;">
-                  <button class="btn-small" onclick="copyInstanceToken()">📋 Copiar</button>
-                  <button class="btn-small btn-warning" onclick="regenerateToken()">🔄 Regenerar</button>
-                </div>
-                <small style="color: var(--text-secondary); font-size: 12px; display: block; margin-top: 4px;">
-                  Este token es único para tu instancia y se usa para conectar con la API
-                </small>
-              </div>
-            </div>
-
-            <!-- Sub-pestañas para Integraciones y Conectores -->
-            <div class="sub-tabs">
-              <button class="sub-tab active" onclick="showConfigSubTab(0)">🔗 Integraciones</button>
-              <button class="sub-tab" onclick="showConfigSubTab(1)">🔌 Conectores</button>
-            </div>
-            
-            <!-- Integraciones -->
-            <div class="sub-tab-content active" id="config-tab-0">
-              <div style="margin-bottom: 24px;">
-                <h3>Integraciones Disponibles</h3>
-                <p style="color: var(--text-secondary); margin-bottom: 20px;">
-                  Conecta tu instancia con servicios externos para ampliar la funcionalidad
-                </p>
-              </div>
-              <div id="integrations-container">
-                <div class="empty-state">
-                  <div class="icon">🔗</div>
-                  <h3>Integraciones en desarrollo</h3>
-                  <p>Próximamente podrás conectar con CRM, bases de datos y más servicios</p>
-                </div>
-              </div>
-            </div>
-            
-            <!-- Conectores -->
-            <div class="sub-tab-content" id="config-tab-1">
-              <div style="margin-bottom: 24px;">
-                <h3>Conectores Externos</h3>
-                <p style="color: var(--text-secondary); margin-bottom: 20px;">
-                  Configura webhooks y conexiones API para sincronizar datos
-                </p>
-              </div>
-              <div id="connectors-container">
-                <div class="empty-state">
-                  <div class="icon">🔌</div>
-                  <h3>Conectores en desarrollo</h3>
-                  <p>Próximamente podrás configurar webhooks, APIs y más conectores</p>
-                </div>
-              </div>
-            </div>
-
-            <!-- Sección de Acciones Críticas -->
-            <div class="section" style="border: 2px solid var(--danger); background: rgba(239, 68, 68, 0.05);">
-              <h3 style="color: var(--danger);">⚠️ Acciones Críticas</h3>
-              <p style="color: var(--text-secondary); margin-bottom: 20px; font-size: 14px;">
-                <strong>Atención:</strong> Estas acciones son irreversibles y pueden afectar el funcionamiento de tu instancia.
-              </p>
-              
-              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-                <div style="background: var(--bg-tertiary); padding: 16px; border-radius: 6px;">
-                  <h4 style="color: var(--text-primary); margin-bottom: 8px;">🔄 Restablecer Instancia</h4>
-                  <p style="color: var(--text-secondary); font-size: 13px; margin-bottom: 12px;">
-                    Limpia todas las configuraciones pero mantiene las reglas y datos
-                  </p>
-                  <button class="btn-small btn-warning" onclick="resetInstance()">
-                    🔄 Restablecer
-                  </button>
-                </div>
-                
-                <div style="background: var(--bg-tertiary); padding: 16px; border-radius: 6px;">
-                  <h4 style="color: var(--danger); margin-bottom: 8px;">🗑️ Eliminar Instancia</h4>
-                  <p style="color: var(--text-secondary); font-size: 13px; margin-bottom: 12px;">
-                    Elimina permanentemente la instancia y todos sus datos
-                  </p>
-                  <button class="btn-small btn-danger" onclick="deleteInstanceFromConfig()">
-                    🗑️ Eliminar
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Pestaña Gestión de Datos -->
-        <div class="tab-content" id="tab-2">
-          <div id="no-instance-data" class="empty-state">
-            <div class="icon">🗂️</div>
-            <h3>Selecciona una instancia</h3>
-            <p>Crea o selecciona una instancia para gestionar sus datos</p>
-          </div>
-          
-          <div id="data-section" style="display: none;">
-            <h2>Gestión de Datos</h2>
-            
-            <!-- Sub-pestañas para gestión de datos -->
-            <div class="sub-tabs">
-              <button class="sub-tab active" onclick="showDataSubTab(0)">📊 Variables</button>
-              <button class="sub-tab" onclick="showDataSubTab(1)">🏷️ Etiquetas</button>
-              <button class="sub-tab" onclick="showDataSubTab(2)">📋 Formularios</button>
-            </div>
-            
-            <!-- Variables -->
-            <div class="sub-tab-content active" id="data-tab-0">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-                <h3>Variables de Plantilla</h3>
-                <button onclick="addVariable()">➕ Nueva Variable</button>
-              </div>
+          <!-- Integraciones -->
+          <div class="sub-tab-content active" id="config-tab-0">
+            <div style="margin-bottom: 24px;">
+              <h3>Integraciones Disponibles</h3>
               <p style="color: var(--text-secondary); margin-bottom: 20px;">
-                Crea variables para usar en tus mensajes. Ejemplo: Hola [Nombre] se convertirá en "Hola Kevin"
+                Conecta tu instancia con servicios externos para ampliar la funcionalidad
               </p>
-              <div id="variables-container" class="variables-grid">
-                <!-- Variables se renderizarán aquí -->
+            </div>
+            <div id="integrations-container">
+              <div class="empty-state">
+                <div class="icon">🔗</div>
+                <h3>Integraciones en desarrollo</h3>
+                <p>Próximamente podrás conectar con CRM, bases de datos y más servicios</p>
               </div>
             </div>
-            
-            <!-- Etiquetas -->
-            <div class="sub-tab-content" id="data-tab-1">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-                <h3>Etiquetas de Clasificación</h3>
-                <button onclick="addTag()">➕ Nueva Etiqueta</button>
-              </div>
-              <div id="tags-container" class="tags-grid">
-                <!-- Etiquetas se renderizarán aquí -->
+          </div>
+          
+          <!-- Conectores -->
+          <div class="sub-tab-content" id="config-tab-1">
+            <div style="margin-bottom: 24px;">
+              <h3>Conectores Externos</h3>
+              <p style="color: var(--text-secondary); margin-bottom: 20px;">
+                Configura webhooks y conexiones API para sincronizar datos
+              </p>
+            </div>
+            <div id="connectors-container">
+              <div class="empty-state">
+                <div class="icon">🔌</div>
+                <h3>Conectores en desarrollo</h3>
+                <p>Próximamente podrás configurar webhooks, APIs y más conectores</p>
               </div>
             </div>
+          </div>
+
+          <!-- Sección de Acciones Críticas -->
+          <div class="section" style="border: 2px solid var(--danger); background: rgba(239, 68, 68, 0.05);">
+            <h3 style="color: var(--danger);">⚠️ Acciones Críticas</h3>
+            <p style="color: var(--text-secondary); margin-bottom: 20px; font-size: 14px;">
+              <strong>Atención:</strong> Estas acciones son irreversibles y pueden afectar el funcionamiento de tu instancia.
+            </p>
             
-            <!-- Formularios -->
-            <div class="sub-tab-content" id="data-tab-2">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-                <h3>Constructor de Formularios</h3>
-                <button onclick="addForm()">➕ Nuevo Formulario</button>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+              <div style="background: var(--bg-tertiary); padding: 16px; border-radius: 6px;">
+                <h4 style="color: var(--text-primary); margin-bottom: 8px;">🔄 Restablecer Instancia</h4>
+                <p style="color: var(--text-secondary); font-size: 13px; margin-bottom: 12px;">
+                  Limpia todas las configuraciones pero mantiene las reglas y datos
+                </p>
+                <button class="btn-small btn-warning" onclick="resetInstance()">
+                  🔄 Restablecer
+                </button>
               </div>
-              <div id="forms-container">
-                <!-- Formularios se renderizarán aquí -->
+              
+              <div style="background: var(--bg-tertiary); padding: 16px; border-radius: 6px;">
+                <h4 style="color: var(--danger); margin-bottom: 8px;">🗑️ Eliminar Instancia</h4>
+                <p style="color: var(--text-secondary); font-size: 13px; margin-bottom: 12px;">
+                  Elimina permanentemente la instancia y todos sus datos
+                </p>
+                <button class="btn-small btn-danger" onclick="deleteInstanceFromConfig()">
+                  🗑️ Eliminar
+                </button>
               </div>
             </div>
           </div>
         </div>
+      </div>
 
-        <!-- Pestaña Analíticas -->
-        <div class="tab-content" id="tab-3">
-          <div id="no-instance-analytics" class="empty-state">
-            <div class="icon">📈</div>
-            <h3>Selecciona una instancia</h3>
-            <p>Crea o selecciona una instancia para ver sus analíticas</p>
+      <!-- Pestaña Gestión de Datos -->
+      <div class="tab-content" id="tab-2">
+        <div id="no-instance-data" class="empty-state">
+          <div class="icon">🗂️</div>
+          <h3>Selecciona una instancia</h3>
+          <p>Crea o selecciona una instancia para gestionar sus datos</p>
+        </div>
+        
+        <div id="data-section" style="display: none;">
+          <h2>Gestión de Datos</h2>
+          
+          <!-- Sub-pestañas para gestión de datos -->
+          <div class="sub-tabs">
+            <button class="sub-tab active" onclick="showDataSubTab(0)">📊 Variables</button>
+            <button class="sub-tab" onclick="showDataSubTab(1)">🏷️ Etiquetas</button>
+            <button class="sub-tab" onclick="showDataSubTab(2)">📋 Formularios</button>
           </div>
           
-          <div id="analytics-section" style="display: none;">
-            <h2>Analíticas y Reportes</h2>
-            <p style="color: var(--text-secondary); margin-bottom: 24px;">Monitorea el rendimiento de tus respuestas automáticas</p>
-            
-            <div id="analytics-container">
-              <div class="empty-state">
-                <div class="icon">📈</div>
-                <h3>Datos insuficientes</h3>
-                <p>Activa el AutoResponder para comenzar a generar estadísticas</p>
-              </div>
+          <!-- Variables -->
+          <div class="sub-tab-content active" id="data-tab-0">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+              <h3>Variables de Plantilla</h3>
+              <button onclick="addVariable()">➕ Nueva Variable</button>
+            </div>
+            <p style="color: var(--text-secondary); margin-bottom: 20px;">
+              Crea variables para usar en tus mensajes. Ejemplo: Hola [Nombre] se convertirá en "Hola Kevin"
+            </p>
+            <div id="variables-container" class="variables-grid">
+              <!-- Variables se renderizarán aquí -->
+            </div>
+          </div>
+          
+          <!-- Etiquetas -->
+          <div class="sub-tab-content" id="data-tab-1">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+              <h3>Etiquetas de Clasificación</h3>
+              <button onclick="addTag()">➕ Nueva Etiqueta</button>
+            </div>
+            <div id="tags-container" class="tags-grid">
+              <!-- Etiquetas se renderizarán aquí -->
+            </div>
+          </div>
+          
+          <!-- Formularios -->
+          <div class="sub-tab-content" id="data-tab-2">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+              <h3>Constructor de Formularios</h3>
+              <button onclick="addForm()">➕ Nuevo Formulario</button>
+            </div>
+            <div id="forms-container">
+              <!-- Formularios se renderizarán aquí -->
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pestaña Analíticas -->
+      <div class="tab-content" id="tab-3">
+        <div id="no-instance-analytics" class="empty-state">
+          <div class="icon">📈</div>
+          <h3>Selecciona una instancia</h3>
+          <p>Crea o selecciona una instancia para ver sus analíticas</p>
+        </div>
+        
+        <div id="analytics-section" style="display: none;">
+          <h2>Analíticas y Reportes</h2>
+          <p style="color: var(--text-secondary); margin-bottom: 24px;">Monitorea el rendimiento de tus respuestas automáticas</p>
+          
+          <div id="analytics-container">
+            <div class="empty-state">
+              <div class="icon">📈</div>
+              <h3>Datos insuficientes</h3>
+              <p>Activa el AutoResponder para comenzar a generar estadísticas</p>
             </div>
           </div>
         </div>
@@ -886,20 +738,5 @@
   <script src="js/ui/tabs.js"></script>
   <script src="js/ui/modal.js"></script>
   <script src="js/ui/themes.js"></script>
-  
-  <!-- Scripts para el Entrenador de IA -->
-  <script src="js/ai-trainer/core/state.js"></script>
-  <script src="js/ai-trainer/core/utils.js"></script>
-  <script src="js/ai-trainer/core/events.js"></script>
-  <script src="js/ai-trainer/modules/functions.js"></script>
-  <script src="js/ai-trainer/modules/projects.js"></script>
-  <script src="js/ai-trainer/modules/sections.js"></script>
-  <script src="js/ai-trainer/modules/flows.js"></script>
-  <script src="js/ai-trainer/modules/faqs.js"></script>
-  <script src="js/ai-trainer/modules/prompts.js"></script>
-  <script src="js/ai-trainer/modules/step-functions.js"></script>
-  <script src="js/ai-trainer/ui/keyboard.js"></script>
-  <script src="js/ai-trainer/ui/render.js"></script>
-  <script src="js/ai-trainer/ui/themes.js"></script>
 </body>
 </html>

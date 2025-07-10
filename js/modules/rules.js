@@ -372,6 +372,265 @@ function toggleRule(groupKey, ruleIndex) {
 }
 
 // ==========================================
+// NUEVAS FUNCIONES: ENTRENADOR DE IA
+// ==========================================
+
+function enterAITrainer() {
+  const instance = getCurrentInstance();
+  if (!instance) {
+    alert('Selecciona una instancia primero');
+    return;
+  }
+  
+  console.log('Entrando al modo Entrenador de IA...');
+  
+  // Ocultar pestañas principales y contenido
+  document.getElementById('main-tabs').style.display = 'none';
+  document.getElementById('main-content-tabs').style.display = 'none';
+  
+  // Mostrar contenedor del AI Trainer
+  document.getElementById('ai-trainer-container').style.display = 'block';
+  
+  // Inicializar el entrenador de IA
+  initializeAITrainer();
+  
+  // Marcar que estamos en modo AI Trainer
+  state.isAITrainerActive = true;
+  
+  console.log('Modo Entrenador de IA activado');
+}
+
+function exitAITrainer() {
+  console.log('Saliendo del modo Entrenador de IA...');
+  
+  // Mostrar pestañas principales y contenido
+  document.getElementById('main-tabs').style.display = 'flex';
+  document.getElementById('main-content-tabs').style.display = 'block';
+  
+  // Ocultar contenedor del AI Trainer
+  document.getElementById('ai-trainer-container').style.display = 'none';
+  
+  // Marcar que ya no estamos en modo AI Trainer
+  state.isAITrainerActive = false;
+  
+  // Refrescar la vista de reglas
+  renderRules();
+  
+  console.log('Modo Entrenador de IA desactivado');
+}
+
+function initializeAITrainer() {
+  console.log('Inicializando Entrenador de IA...');
+  
+  // Verificar si el namespace aiTrainer existe
+  if (typeof aiTrainer === 'undefined') {
+    console.log('Creando namespace aiTrainer...');
+    // Crear el namespace aiTrainer global
+    window.aiTrainer = {
+      // Estado del AI Trainer
+      state: {
+        currentTab: 0,
+        currentFlow: 0,
+        currentSection: 0,
+        flows: [{
+          name: "Flujo Principal",
+          steps: [
+            { text: "Saluda al cliente y pregúntale si desea retirar en tienda o envío a domicilio", functions: [] },
+            { text: "Solicita el pedido (productos y cantidades) y, si aplica, la dirección para envío.", functions: [] }
+          ]
+        }],
+        sections: [
+          {
+            name: "Instrucciones Generales",
+            fields: [
+              { type: "text", label: "Configuración", items: ["Profesional, cordial y claro", "Respuestas breves, máximo 3 renglones"] },
+              { type: "textarea", label: "Contexto", value: "Actúa como encargado de tomar pedidos por WhatsApp" }
+            ]
+          },
+          {
+            name: "Reglas de comportamiento", 
+            fields: [
+              { 
+                type: "list", 
+                label: "Reglas", 
+                items: [
+                  "Pregunta una cosa a la vez",
+                  "Envía los enlaces sin formato", 
+                  "No proporciones información fuera de este documento"
+                ]
+              }
+            ]
+          }
+        ],
+        faqs: [
+          { question: "¿Cuáles son los horarios de atención?", answer: "Atendemos de lunes a domingo de 8:00 AM a 10:00 PM" },
+          { question: "¿Hacen delivery?", answer: "Sí, hacemos delivery en un radio de 5km" }
+        ]
+      },
+      
+      // Funciones básicas del AI Trainer
+      showTab: function(index) {
+        console.log(`AI Trainer: Cambiando a pestaña ${index}`);
+        document.querySelectorAll('#ai-trainer-tabs .tab').forEach((tab, i) => {
+          tab.classList.toggle('active', i === index);
+        });
+        document.querySelectorAll('#ai-trainer-container .tab-content').forEach((content, i) => {
+          content.classList.toggle('active', i === index);
+        });
+        this.state.currentTab = index;
+      },
+      
+      updatePrompt: function() {
+        console.log('AI Trainer: Actualizando prompt...');
+        const businessName = document.getElementById('ai-business-name')?.value || '[Nombre negocio]';
+        
+        let html = '';
+        html += `<span class="output-title">Prompt para Asistente IA – "${businessName}"</span>\n\n`;
+        
+        // Aquí iría la lógica completa de generación de prompt
+        // Por ahora, mostrar un mensaje básico
+        html += `<span class="output-section">**Configuración básica:**</span>\n`;
+        html += `- Negocio: ${businessName}\n`;
+        html += `- Estado: Configuración inicial\n\n`;
+        
+        html += `<span class="output-comment">// Configura las secciones, flujos y FAQs para generar el prompt completo</span>\n`;
+        
+        const outputElement = document.getElementById('ai-output');
+        if (outputElement) {
+          outputElement.innerHTML = html.trim();
+        }
+      },
+      
+      copyPrompt: function(event) {
+        const outputElement = document.getElementById('ai-output');
+        const text = outputElement.textContent || outputElement.innerText;
+        
+        navigator.clipboard.writeText(text).then(() => {
+          const btn = event ? event.target.closest('.copy-btn') : document.querySelector('#ai-trainer-container .copy-btn');
+          const originalHTML = btn.innerHTML;
+          
+          btn.innerHTML = '<span>✅</span><span>¡Copiado!</span>';
+          btn.style.background = 'linear-gradient(135deg, #22c55e, #16a34a)';
+          
+          setTimeout(() => {
+            btn.innerHTML = originalHTML;
+            btn.style.background = 'linear-gradient(135deg, var(--success), #059669)';
+          }, 2000);
+        }).catch(err => {
+          console.error('Error al copiar:', err);
+          alert('Error al copiar al portapapeles');
+        });
+      },
+      
+      // Funciones placeholder para proyectos
+      projects: {
+        loadProject: function(projectName) {
+          console.log(`AI Trainer: Cargando proyecto ${projectName}`);
+        },
+        loadVersion: function(version) {
+          console.log(`AI Trainer: Cargando versión ${version}`);
+        },
+        saveProject: function() {
+          console.log('AI Trainer: Guardando proyecto');
+          alert('Funcionalidad de proyectos en desarrollo');
+        },
+        deleteProject: function() {
+          console.log('AI Trainer: Eliminando proyecto');
+          alert('Funcionalidad de proyectos en desarrollo');
+        },
+        exportProject: function() {
+          console.log('AI Trainer: Exportando proyecto');
+          alert('Funcionalidad de proyectos en desarrollo');
+        },
+        importProject: function() {
+          console.log('AI Trainer: Importando proyecto');
+          alert('Funcionalidad de proyectos en desarrollo');
+        }
+      },
+      
+      // Funciones placeholder para secciones
+      changeSection: function() {
+        console.log('AI Trainer: Cambiando sección');
+      },
+      renameSection: function() {
+        console.log('AI Trainer: Renombrando sección');
+      },
+      addSection: function() {
+        console.log('AI Trainer: Agregando sección');
+        alert('Funcionalidad en desarrollo');
+      },
+      deleteSection: function() {
+        console.log('AI Trainer: Eliminando sección');
+        alert('Funcionalidad en desarrollo');
+      },
+      addTextField: function() {
+        console.log('AI Trainer: Agregando campo de texto');
+        alert('Funcionalidad en desarrollo');
+      },
+      addTextAreaField: function() {
+        console.log('AI Trainer: Agregando área de texto');
+        alert('Funcionalidad en desarrollo');
+      },
+      addListField: function() {
+        console.log('AI Trainer: Agregando lista');
+        alert('Funcionalidad en desarrollo');
+      },
+      
+      // Funciones placeholder para flujos
+      changeFlow: function() {
+        console.log('AI Trainer: Cambiando flujo');
+      },
+      renameFlow: function() {
+        console.log('AI Trainer: Renombrando flujo');
+      },
+      addFlow: function() {
+        console.log('AI Trainer: Agregando flujo');
+        alert('Funcionalidad en desarrollo');
+      },
+      deleteFlow: function() {
+        console.log('AI Trainer: Eliminando flujo');
+        alert('Funcionalidad en desarrollo');
+      },
+      addStep: function() {
+        console.log('AI Trainer: Agregando paso');
+        alert('Funcionalidad en desarrollo');
+      },
+      
+      // Funciones placeholder para FAQs
+      addFAQ: function() {
+        console.log('AI Trainer: Agregando FAQ');
+        alert('Funcionalidad en desarrollo');
+      },
+      
+      // Funciones placeholder para funciones
+      functions: {
+        addFunction: function() {
+          console.log('AI Trainer: Agregando función');
+          alert('Funcionalidad en desarrollo');
+        },
+        loadDefaults: function() {
+          console.log('AI Trainer: Cargando funciones por defecto');
+          alert('Funcionalidad en desarrollo');
+        }
+      }
+    };
+  }
+  
+  // Inicializar la interfaz del AI Trainer
+  aiTrainer.updatePrompt();
+  
+  // Event listeners para campos del AI Trainer
+  const businessNameField = document.getElementById('ai-business-name');
+  if (businessNameField) {
+    businessNameField.addEventListener('input', () => {
+      aiTrainer.updatePrompt();
+    });
+  }
+  
+  console.log('Entrenador de IA inicializado correctamente');
+}
+
+// ==========================================
 // NUEVAS FUNCIONES: ELIMINAR AGENTE IA Y RESETEAR COINCIDENCIAS
 // ==========================================
 

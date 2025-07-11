@@ -1,0 +1,430 @@
+/* ==========================================
+   ESTILOS BASE - AUTORESPONDER
+   ========================================== */
+
+/* Reset y Base */
+* {
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 14px;
+  line-height: var(--line-height);
+  color: var(--text-primary);
+  background-color: var(--bg-layout);
+  font-family: var(--font-family);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--bg-layout);
+  color: var(--text-primary);
+  font-size: var(--font-size);
+  font-family: var(--font-family);
+  line-height: var(--line-height);
+  transition: background-color var(--motion-duration-mid) var(--motion-ease-out),
+              color var(--motion-duration-mid) var(--motion-ease-out);
+}
+
+/* Tipografía Base */
+h1, h2, h3, h4, h5, h6 {
+  margin: 0 0 var(--space-md) 0;
+  color: var(--text-primary);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-sm);
+}
+
+h1 {
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1.2;
+}
+
+h2 {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1.3;
+}
+
+h3 {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.4;
+}
+
+h4 {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.4;
+}
+
+h5 {
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-medium);
+}
+
+h6 {
+  font-size: var(--font-size);
+  font-weight: var(--font-weight-medium);
+}
+
+p {
+  margin: 0 0 var(--space-md) 0;
+  color: var(--text-primary);
+}
+
+small {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+/* Enlaces */
+a {
+  color: var(--text-link);
+  text-decoration: none;
+  cursor: pointer;
+  transition: color var(--motion-duration-mid) var(--motion-ease-out);
+}
+
+a:hover {
+  color: var(--text-link-hover);
+}
+
+a:active {
+  color: var(--text-link-active);
+}
+
+/* Código */
+code {
+  font-family: var(--font-family-code);
+  font-size: 0.875em;
+  background-color: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  padding: 2px 6px;
+  margin: 0 1px;
+}
+
+pre {
+  font-family: var(--font-family-code);
+  background-color: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  padding: var(--space-md);
+  overflow-x: auto;
+  white-space: pre;
+  line-height: var(--line-height-sm);
+}
+
+pre code {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+
+/* Scrollbars Personalizados */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-tertiary);
+  border-radius: var(--border-radius-sm);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: var(--border-radius-sm);
+  transition: background-color var(--motion-duration-mid) var(--motion-ease-out);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
+}
+
+::-webkit-scrollbar-corner {
+  background: var(--bg-tertiary);
+}
+
+/* Firefox Scrollbars */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-color) var(--bg-tertiary);
+}
+
+/* Estados de Foco */
+:focus {
+  outline: none;
+}
+
+:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+/* Estados de Selección */
+::selection {
+  background-color: rgba(24, 144, 255, 0.2);
+  color: var(--text-primary);
+}
+
+::-moz-selection {
+  background-color: rgba(24, 144, 255, 0.2);
+  color: var(--text-primary);
+}
+
+/* Utilidades Globales */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.text-truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.text-wrap {
+  word-wrap: break-word;
+  word-break: break-word;
+}
+
+/* Estados de Carga */
+.loading {
+  pointer-events: none;
+  opacity: 0.6;
+  user-select: none;
+}
+
+.loading::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 16px;
+  height: 16px;
+  margin: -8px 0 0 -8px;
+  border: 2px solid var(--border-color);
+  border-top-color: var(--primary-color);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+/* Animaciones Base */
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes fadeIn {
+  from { 
+    opacity: 0; 
+    transform: translateY(8px); 
+  }
+  to { 
+    opacity: 1; 
+    transform: translateY(0); 
+  }
+}
+
+@keyframes fadeOut {
+  from { 
+    opacity: 1; 
+    transform: translateY(0); 
+  }
+  to { 
+    opacity: 0; 
+    transform: translateY(-8px); 
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Clases de Animación */
+.fade-in {
+  animation: fadeIn var(--motion-duration-mid) var(--motion-ease-out);
+}
+
+.fade-out {
+  animation: fadeOut var(--motion-duration-mid) var(--motion-ease-out);
+}
+
+.slide-down {
+  animation: slideDown var(--motion-duration-mid) var(--motion-ease-out);
+}
+
+.slide-up {
+  animation: slideUp var(--motion-duration-mid) var(--motion-ease-out);
+}
+
+.scale-in {
+  animation: scaleIn var(--motion-duration-mid) var(--motion-ease-out);
+}
+
+/* Estados de Transición */
+.transition-all {
+  transition: all var(--motion-duration-mid) var(--motion-ease-out);
+}
+
+.transition-colors {
+  transition: background-color var(--motion-duration-mid) var(--motion-ease-out),
+              border-color var(--motion-duration-mid) var(--motion-ease-out),
+              color var(--motion-duration-mid) var(--motion-ease-out);
+}
+
+.transition-opacity {
+  transition: opacity var(--motion-duration-mid) var(--motion-ease-out);
+}
+
+.transition-transform {
+  transition: transform var(--motion-duration-mid) var(--motion-ease-out);
+}
+
+/* Estados de Hover */
+.hover-lift {
+  transition: transform var(--motion-duration-mid) var(--motion-ease-out),
+              box-shadow var(--motion-duration-mid) var(--motion-ease-out);
+}
+
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--box-shadow-hover);
+}
+
+/* Estados de Interacción */
+.interactive {
+  cursor: pointer;
+  user-select: none;
+  transition: var(--transition-all);
+}
+
+.interactive:hover {
+  transform: translateY(-1px);
+}
+
+.interactive:active {
+  transform: translateY(0);
+}
+
+/* Estados de Disponibilidad */
+.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.readonly {
+  cursor: default;
+  pointer-events: none;
+}
+
+/* Mejoras de Accesibilidad */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* High Contrast Mode */
+@media (prefers-contrast: high) {
+  :root {
+    --border-color: #000000;
+    --text-secondary: #000000;
+  }
+  
+  [data-theme="dark"] {
+    --border-color: #ffffff;
+    --text-secondary: #ffffff;
+  }
+}
+
+/* Mejoras para Pantallas Táctiles */
+@media (hover: none) and (pointer: coarse) {
+  .interactive {
+    transform: none;
+  }
+  
+  .interactive:hover {
+    transform: none;
+  }
+  
+  .interactive:active {
+    transform: scale(0.98);
+  }
+  
+  .hover-lift:hover {
+    transform: none;
+    box-shadow: var(--box-shadow);
+  }
+}
+
+/* Estados de Tema Oscuro Específicos */
+[data-theme="dark"] {
+  color-scheme: dark;
+}
+
+[data-theme="dark"] code {
+  background-color: var(--bg-quaternary);
+}
+
+[data-theme="dark"] pre {
+  background-color: var(--bg-quaternary);
+}
+
+[data-theme="dark"] ::selection {
+  background-color: rgba(22, 104, 220, 0.3);
+}
+
+[data-theme="dark"] ::-moz-selection {
+  background-color: rgba(22, 104, 220, 0.3);
+}
